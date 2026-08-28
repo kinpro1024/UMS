@@ -9,7 +9,6 @@ class Subsystem
         {
             public:
                 void* data_;
-                std::chrono::steady_clock::time_point timestamp_;
                 uint8_t subsys_id_;
                 //1)RGB 2)ToF 3)Thermal 4)IMU 5)Mic
         };
@@ -24,6 +23,6 @@ class Subsystem
         //These are functions used by the preview thread to acquire
         //frames from the subsystems with synchronization, didn't feel
         //the need to implement timeouts as well, maybe should have...
-        virtual Frame* acquire() = 0;
+        virtual const Frame* acquire() = 0;
         virtual void release() = 0;
 };

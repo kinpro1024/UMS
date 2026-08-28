@@ -11,7 +11,7 @@ class Thermal : public Subsystem
         void videoCapture() override;
         void deinit() override;
 
-        Subsystem::Frame* acquire() override;
+        const Subsystem::Frame* acquire() override;
         void release() override;
 
     private:
@@ -19,8 +19,7 @@ class Thermal : public Subsystem
         std::unique_ptr<ThermalFrame> latest_frame_;
         std::mutex thermal_preview_buffer_mutex_;
         Subsystem::Frame thermal_payload_;
-        const uint8_t THERMAL_ID = 3;
-
+        const uint8_t THERMAL_ID_ = 3;
 };
 
 int Thermal::init()
@@ -45,13 +44,11 @@ void Thermal::idle()
     }
 }
 
-Subsystem::Frame* Thermal::acquire()
+const Subsystem::Frame* Thermal::acquire()
 {
-    thermal_payload_.data_ = latest_frame_.get();
-    thermal_payload_.timestamp_ = latest_frame_->timestamp;
-    thermal_payload_.subsys_id_ = THERMAL_ID;
-
     thermal_preview_buffer_mutex_.lock();
+    thermal_payload_.data_ = latest_frame_.get();
+    thermal_payload_.subsys_id_ = THERMAL_ID_;
     return &thermal_payload_;
 }
 
