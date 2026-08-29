@@ -3,19 +3,16 @@
 #include "ArducamTOFCamera.hpp"
 #include <cstring>
 
-//The TofFrame class only exists because ArducamFrameBuffer* does not have a timestamp,
-//the class is merely an envelope for consitency and coherence
-
-class TofFrame
+class TofFrame : public Subsystem::Frame
 {
     public:
-        std::vector<float> depth_data;
-        std::vector<float> confidence_data;
-        std::chrono::steady_clock::time_point timestamp;
+        std::vector<float> depth_data_;
+        std::vector<float> confidence_data_;
+        std::chrono::steady_clock::time_point timestamp_;
 
         TofFrame()
-        : depth_data(240*180),
-          confidence_data(240*180)
+        : depth_data_(240*180),
+          confidence_data_(240*180)
           {}
 };
 
@@ -28,15 +25,17 @@ class Tof : public Subsystem
         void videoCapture() override;
         void deinit() override;
 
-        const Subsystem::Frame* acquire() override;
+        const TofFrame* acquire() override;
         void release() override;
+
+    protected:
+        void acquisitionLoop() override;
 
     private:
         Arducam::ArducamTOFCamera tof_;
-        std::unique_ptr<TofFrame> latest_frame_;
-        std::mutex tof_preview_buffer_mutex_;
-        Subsystem::Frame tof_payload_;
-        const uint8_t TOF_ID_ = 3;
+        std::unique_ptr<TofFrame> latest_frame_ = std::make_unique<TofFrame>();
+        std::mutex latest_frame_mutex_;
+        TofFrame preview_buffer_;
         const int MAX_DISTANCE_ = 4000;
         const int MAX_WIDTH_ = 240;
         const int MAX_HEIGHT_ = 180;
@@ -57,6 +56,7 @@ int Tof::init()
     }
     tof_.setControl(Arducam::Control::RANGE, MAX_DISTANCE_);
     tof_.getControl(Arducam::Control::RANGE, &max_range_);
+    return 0;
 }
 
 void Tof::idle()
@@ -76,23 +76,29 @@ void Tof::idle()
     memcpy(temp_depth_buffer.data(), depth_ptr, FRAME_SIZE_*sizeof(float));
     memcpy(temp_confidence_buffer.data(), confidence_ptr, FRAME_SIZE_*sizeof(float));
     {
-        std::lock_guard<std::mutex> lock(tof_preview_buffer_mutex_);
-        latest_frame_->depth_data = std::move(temp_depth_buffer);
-        latest_frame_->confidence_data = std::move(temp_confidence_buffer);
-        latest_frame_->timestamp = new_timestamp;
-        tof_.releaseFrame(new_frame);
+        std::lock_guard<std::mutex> lock(latest_frame_mutex_);
+        latest_frame_->depth_data_ = std::move(temp_depth_buffer);
+        latest_frame_->confidence_data_ = std::move(temp_confidence_buffer);
+        latest_frame_->timestamp_ = new_timestamp;
     }
+    tof_.releaseFrame(new_frame);
 }
 
-const Subsystem::Frame* Tof::acquire()
+const TofFrame* Tof::acquire()
 {
-    tof_preview_buffer_mutex_.lock();
-    tof_payload_.data_ = latest_frame_.get();
-    tof_payload_.subsys_id_ = TOF_ID_;
-    return &tof_payload_;
+    if(latest_frame_mutex_.try_lock())
+    {
+        //preview does not need anything except depth data
+        memcpy(preview_buffer_.depth_data_.data(), latest_frame_->depth_data_.data(), latest_frame_->depth_data_.size());
+        return &preview_buffer_;
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 
 void Tof::release()
 {
-    tof_preview_buffer_mutex_.unlock();
+    latest_frame_mutex_.unlock();
 }

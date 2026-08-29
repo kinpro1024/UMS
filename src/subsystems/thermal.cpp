@@ -1,6 +1,18 @@
 #include <mutex>
+#include <cstring>
 #include "subsystem.hpp"
 #include "../wrappers/thermal_wrapper.hpp"
+
+class ThermalFrame : public Subsystem::Frame
+{
+    public:
+        std::vector<float> tempratures_;
+        std::chrono::steady_clock::time_point timestamp_;
+
+        ThermalFrame()
+        : tempratures_(768)
+        {}
+};
 
 class Thermal : public Subsystem
 {
@@ -11,15 +23,14 @@ class Thermal : public Subsystem
         void videoCapture() override;
         void deinit() override;
 
-        const Subsystem::Frame* acquire() override;
+        const ThermalFrame* acquire() override;
         void release() override;
 
     private:
         Mlx90640 thermal_cam_;
-        std::unique_ptr<ThermalFrame> latest_frame_;
-        std::mutex thermal_preview_buffer_mutex_;
-        Subsystem::Frame thermal_payload_;
-        const uint8_t THERMAL_ID_ = 3;
+        std::unique_ptr<ThermalFrame> latest_frame_  = std::make_unique<ThermalFrame>();
+        std::mutex latest_frame_mutex_;
+        ThermalFrame preview_buffer_;
 };
 
 int Thermal::init()
@@ -33,26 +44,32 @@ int Thermal::init()
 
 void Thermal::idle()
 {
-    std::unique_ptr<ThermalFrame> new_frame = thermal_cam_.requestFullFrame(500);
+    std::unique_ptr<ThermalWrapperFrame> new_frame = thermal_cam_.requestFullFrame(500);
     if (!new_frame)
     {
         return;
     }
     {
-        std::lock_guard<std::mutex> lock(thermal_preview_buffer_mutex_);
-        latest_frame_ = std::move(new_frame);
+        std::lock_guard<std::mutex> lock(latest_frame_mutex_);
+        latest_frame_->tempratures_ = std::move(new_frame->temperatures);
+        latest_frame_->timestamp_ = new_frame->timestamp;
     }
 }
 
-const Subsystem::Frame* Thermal::acquire()
+const ThermalFrame* Thermal::acquire()
 {
-    thermal_preview_buffer_mutex_.lock();
-    thermal_payload_.data_ = latest_frame_.get();
-    thermal_payload_.subsys_id_ = THERMAL_ID_;
-    return &thermal_payload_;
+    if (latest_frame_mutex_.try_lock())
+    {
+        memcpy(preview_buffer_.tempratures_.data(), latest_frame_->tempratures_.data(), latest_frame_->tempratures_.size());
+        return &preview_buffer_;
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 
 void Thermal::release()
 {
-    thermal_preview_buffer_mutex_.unlock();
+    latest_frame_mutex_.unlock();
 }

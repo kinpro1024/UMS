@@ -36,11 +36,11 @@ int Mlx90640::dataReady(void) {
 	return (status & MLX90640_STAT_DATA_READY_MASK) != 0;
 }
 
-std::unique_ptr<ThermalFrame> Mlx90640::requestFullFrame(int timeout_ms) {
+std::unique_ptr<ThermalWrapperFrame> Mlx90640::requestFullFrame(int timeout_ms) {
 
 	TimeType request_start = std::chrono::steady_clock::now();
 
-	std::unique_ptr<ThermalFrame> final_frame =  std::make_unique<ThermalFrame>();
+	std::unique_ptr<ThermalWrapperFrame> final_frame =  std::make_unique<ThermalWrapperFrame>();
 
 	subpage_received[0] = false;
 	subpage_received[1] = false;

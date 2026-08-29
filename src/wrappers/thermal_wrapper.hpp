@@ -11,12 +11,12 @@
 
 typedef std::chrono::steady_clock::time_point TimeType;
 
-class ThermalFrame {
+class ThermalWrapperFrame {
 	public:
 	std::vector<float> temperatures;
 	TimeType timestamp;
 
-	ThermalFrame()
+	ThermalWrapperFrame()
 	:  temperatures(768)
 	{}
 };
@@ -33,5 +33,5 @@ private:
 public:
 	int sensorInit(uint8_t refreshRateSet);
 	int dataReady(void);
-	std::unique_ptr<ThermalFrame> requestFullFrame(int timeout_ms);	
+	std::unique_ptr<ThermalWrapperFrame> requestFullFrame(int timeout_ms);	
 };
