@@ -7,11 +7,11 @@
 class ThermalFrame : public Subsystem::Frame
 {
     public:
-        std::vector<float> tempratures_;
+        std::vector<float> temperatures_;
         std::chrono::steady_clock::time_point timestamp_;
 
         ThermalFrame()
-        : tempratures_(768)
+        : temperatures_(768)
         {}
 };
 
@@ -56,7 +56,7 @@ void Thermal::acquisitionLoop()
     }
     {
         std::lock_guard<std::mutex> lock(latest_frame_mutex_);
-        latest_frame_->tempratures_ = std::move(new_frame->temperatures);
+        latest_frame_->temperatures_ = std::move(new_frame->temperatures);
         latest_frame_->timestamp_ = new_frame->timestamp;
         new_preview_frame_ = true;
         preview_cv_.notify_one();
@@ -68,7 +68,7 @@ const ThermalFrame* Thermal::requestPreviewFrame()
     {
         std::unique_lock<std::mutex> lock(latest_frame_mutex_);
         preview_cv_.wait(lock, [this] {return new_preview_frame_;});
-        memcpy(preview_buffer_.tempratures_.data(), latest_frame_->tempratures_.data(), latest_frame_->tempratures_.size()*sizeof(float));
+        memcpy(preview_buffer_.temperatures_.data(), latest_frame_->temperatures_.data(), latest_frame_->temperatures_.size()*sizeof(float));
         new_preview_frame_ = false;
         return &preview_buffer_;
     }
