@@ -1,5 +1,6 @@
 #include <mutex>
 #include <cstring>
+#include <condition_variable>
 #include "subsystem.hpp"
 #include "../wrappers/thermal_wrapper.hpp"
 
@@ -23,14 +24,18 @@ class Thermal : public Subsystem
         void videoCapture() override;
         void deinit() override;
 
-        const ThermalFrame* acquire() override;
-        void release() override;
+        const ThermalFrame* requestPreviewFrame() override;
+
+    protected:
+        void acquisitionLoop() override;
 
     private:
         Mlx90640 thermal_cam_;
         std::unique_ptr<ThermalFrame> latest_frame_  = std::make_unique<ThermalFrame>();
+        std::condition_variable preview_cv_;
         std::mutex latest_frame_mutex_;
         ThermalFrame preview_buffer_;
+        bool new_preview_frame_ = false;
 };
 
 int Thermal::init()
@@ -42,7 +47,7 @@ int Thermal::init()
     return 1;
 }
 
-void Thermal::idle()
+void Thermal::acquisitionLoop()
 {
     std::unique_ptr<ThermalWrapperFrame> new_frame = thermal_cam_.requestFullFrame(500);
     if (!new_frame)
@@ -53,23 +58,18 @@ void Thermal::idle()
         std::lock_guard<std::mutex> lock(latest_frame_mutex_);
         latest_frame_->tempratures_ = std::move(new_frame->temperatures);
         latest_frame_->timestamp_ = new_frame->timestamp;
+        new_preview_frame_ = true;
+        preview_cv_.notify_one();
     }
 }
 
-const ThermalFrame* Thermal::acquire()
+const ThermalFrame* Thermal::requestPreviewFrame()
 {
-    if (latest_frame_mutex_.try_lock())
     {
-        memcpy(preview_buffer_.tempratures_.data(), latest_frame_->tempratures_.data(), latest_frame_->tempratures_.size());
+        std::unique_lock<std::mutex> lock(latest_frame_mutex_);
+        preview_cv_.wait(lock, [this] {return new_preview_frame_;});
+        memcpy(preview_buffer_.tempratures_.data(), latest_frame_->tempratures_.data(), latest_frame_->tempratures_.size()*sizeof(float));
+        new_preview_frame_ = false;
         return &preview_buffer_;
     }
-    else
-    {
-        return nullptr;
-    }
-}
-
-void Thermal::release()
-{
-    latest_frame_mutex_.unlock();
 }

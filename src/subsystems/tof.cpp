@@ -1,4 +1,5 @@
 #include <mutex>
+#include <condition_variable>
 #include "subsystem.hpp"
 #include "ArducamTOFCamera.hpp"
 #include <cstring>
@@ -25,8 +26,7 @@ class Tof : public Subsystem
         void videoCapture() override;
         void deinit() override;
 
-        const TofFrame* acquire() override;
-        void release() override;
+        const TofFrame* requestPreviewFrame() override;
 
     protected:
         void acquisitionLoop() override;
@@ -34,8 +34,10 @@ class Tof : public Subsystem
     private:
         Arducam::ArducamTOFCamera tof_;
         std::unique_ptr<TofFrame> latest_frame_ = std::make_unique<TofFrame>();
+        std::condition_variable preview_cv_;
         std::mutex latest_frame_mutex_;
         TofFrame preview_buffer_;
+        bool new_preview_frame_ = false;
         const int MAX_DISTANCE_ = 4000;
         const int MAX_WIDTH_ = 240;
         const int MAX_HEIGHT_ = 180;
@@ -45,8 +47,7 @@ class Tof : public Subsystem
 
 int Tof::init()
 {
-    if (tof_.open(Arducam::Connection::CSI, 8))
-    //8 when both RGB camera and ToF are connected via CSI
+    if (tof_.open(Arducam::Connection::CSI, 8)) //8 when both RGB camera and ToF are connected via CSI
     {
         return 1;
     }
@@ -59,7 +60,7 @@ int Tof::init()
     return 0;
 }
 
-void Tof::idle()
+void Tof::acquisitionLoop()
 {
     Arducam::ArducamFrameBuffer* new_frame = tof_.requestFrame(200);
     std::chrono::steady_clock::time_point new_timestamp = std::chrono::steady_clock::now();
@@ -80,25 +81,20 @@ void Tof::idle()
         latest_frame_->depth_data_ = std::move(temp_depth_buffer);
         latest_frame_->confidence_data_ = std::move(temp_confidence_buffer);
         latest_frame_->timestamp_ = new_timestamp;
+        new_preview_frame_ = true;
+        preview_cv_.notify_one();
     }
     tof_.releaseFrame(new_frame);
 }
 
-const TofFrame* Tof::acquire()
+const TofFrame* Tof::requestPreviewFrame()
 {
-    if(latest_frame_mutex_.try_lock())
     {
+        std::unique_lock<std::mutex> lock(latest_frame_mutex_);
+        preview_cv_.wait(lock, [this] {return new_preview_frame_;});
         //preview does not need anything except depth data
-        memcpy(preview_buffer_.depth_data_.data(), latest_frame_->depth_data_.data(), latest_frame_->depth_data_.size());
+        memcpy(preview_buffer_.depth_data_.data(), latest_frame_->depth_data_.data(), latest_frame_->depth_data_.size()*sizeof(float));
+        new_preview_frame_ = false;
         return &preview_buffer_;
     }
-    else
-    {
-        return nullptr;
-    }
-}
-
-void Tof::release()
-{
-    latest_frame_mutex_.unlock();
 }

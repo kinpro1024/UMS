@@ -33,5 +33,5 @@ private:
 public:
 	int sensorInit(uint8_t refreshRateSet);
 	int dataReady(void);
-	std::unique_ptr<ThermalWrapperFrame> requestFullFrame(int timeout_ms);	
+	std::unique_ptr<ThermalWrapperFrame> requestFullFrame(int timeout_ms);
 };
