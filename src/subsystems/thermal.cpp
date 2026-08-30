@@ -59,8 +59,8 @@ void Thermal::acquisitionLoop()
         latest_frame_->temperatures_ = std::move(new_frame->temperatures);
         latest_frame_->timestamp_ = new_frame->timestamp;
         new_preview_frame_ = true;
-        preview_cv_.notify_one();
     }
+    preview_cv_.notify_one();
 }
 
 const ThermalFrame* Thermal::requestPreviewFrame()

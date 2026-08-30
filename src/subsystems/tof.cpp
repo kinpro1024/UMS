@@ -82,8 +82,8 @@ void Tof::acquisitionLoop()
         latest_frame_->confidence_data_ = std::move(temp_confidence_buffer);
         latest_frame_->timestamp_ = new_timestamp;
         new_preview_frame_ = true;
-        preview_cv_.notify_one();
     }
+    preview_cv_.notify_one();
     tof_.releaseFrame(new_frame);
 }
 
