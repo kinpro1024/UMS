@@ -1,50 +1,53 @@
 #include <mutex>
+#include <stdexcept>
 #include <cstring>
 #include <condition_variable>
+#include <atomic>
 #include "subsystem.hpp"
 #include "../wrappers/thermal_wrapper.hpp"
 
-class ThermalFrame : public Subsystem::Frame
+namespace ums
 {
-    public:
-        std::vector<float> temperatures_;
-        std::chrono::steady_clock::time_point timestamp_;
-
-        ThermalFrame()
-        : temperatures_(768)
-        {}
-};
-
-class Thermal : public Subsystem
-{
-    public:
-        int init() override;
-        void idle() override;
-        void stillCapture() override;
-        void videoCapture() override;
-        void deinit() override;
-
-        const ThermalFrame* requestPreviewFrame() override;
-
-    protected:
-        void acquisitionLoop() override;
-
-    private:
-        Mlx90640 thermal_cam_;
-        std::unique_ptr<ThermalFrame> latest_frame_  = std::make_unique<ThermalFrame>();
-        std::condition_variable preview_cv_;
-        std::mutex latest_frame_mutex_;
-        ThermalFrame preview_buffer_;
-        bool new_preview_frame_ = false;
-};
-
-int Thermal::init()
-{
-    if (!thermal_cam_.sensorInit(0x07)) //0x07 corresponds to 64Hz refresh rate on the MLX90640 sensor
+    class Thermal : public Subsystem
     {
-        return 0;
-    }
-    return 1;
+        public:
+            class ThermalFrame : public Subsystem::Frame
+            {
+                public:
+                    std::vector<float> temperatures_;
+                    std::chrono::steady_clock::time_point timestamp_;
+
+                    ThermalFrame()
+                    : temperatures_(768)
+                    {}
+            };
+            Thermal()
+                {
+                    if (thermal_cam_.sensorInit(0x07)) //0x07 corresponds to 64Hz refresh rate on the MLX90640 sensor
+                    {
+                        throw std::runtime_error("THERMAL INIT FAILED");
+                    }
+                }
+            ~Thermal()
+            {
+                //aqloop join
+            }
+
+            void setState(UmsDaemon::State state) override;
+            const ThermalFrame* acquirePreviewFrame() override;
+
+        protected:
+            void acquisitionLoop() override;
+
+        private:
+            std::atomic<UmsDaemon::State> current_state_;
+            Mlx90640 thermal_cam_;
+            std::unique_ptr<ThermalFrame> latest_frame_  = std::make_unique<ThermalFrame>();
+            std::condition_variable preview_cv_;
+            std::mutex latest_frame_mutex_;
+            ThermalFrame preview_buffer_;
+            bool new_preview_frame_ = false;
+    };
 }
 
 void Thermal::acquisitionLoop()
