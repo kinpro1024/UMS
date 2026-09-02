@@ -35,44 +35,83 @@ namespace ums
 
             void setState(UmsDaemon::State state) override;
             const ThermalFrame* acquirePreviewFrame() override;
+            void releasePreviewFrame() override;
 
         protected:
             void acquisitionLoop() override;
+            void fillPreview() override;
+            void stateExecution() override;
+            void saveFrame(std::unique_ptr<Frame> frame) override;
 
         private:
             std::atomic<UmsDaemon::State> current_state_;
             Mlx90640 thermal_cam_;
             std::unique_ptr<ThermalFrame> latest_frame_  = std::make_unique<ThermalFrame>();
             std::condition_variable preview_cv_;
-            std::mutex latest_frame_mutex_;
+            std::mutex preview_mutex_;
             ThermalFrame preview_buffer_;
             bool new_preview_frame_ = false;
     };
 }
 
-void Thermal::acquisitionLoop()
+void ums::Thermal::acquisitionLoop()
 {
     std::unique_ptr<ThermalWrapperFrame> new_frame = thermal_cam_.requestFullFrame(500);
     if (!new_frame)
     {
         return;
     }
+    latest_frame_->temperatures_ = std::move(new_frame->temperatures);
+    latest_frame_->timestamp_ = new_frame->timestamp;
+    stateExecution();
+}
+
+void ums::Thermal::stateExecution()
+{
+    switch (current_state_)
     {
-        std::lock_guard<std::mutex> lock(latest_frame_mutex_);
-        latest_frame_->temperatures_ = std::move(new_frame->temperatures);
-        latest_frame_->timestamp_ = new_frame->timestamp;
+        case ums::UmsDaemon::State::IDLE:
+            fillPreview();
+            break;
+
+        case ums::UmsDaemon::State::STILL_CAPTURE:
+            std::unique_ptr<Frame> frame = std::move(latest_frame_);
+            saveFrame(frame);
+            break;
+        
+        default:
+            break;
+    }
+}
+
+void ums::Thermal::fillPreview()
+{
+    if (std::unique_lock<std::mutex> lock(preview_mutex_, std::try_to_lock); lock.owns_lock())
+    {
+        memcpy(preview_buffer_.temperatures_.data(), latest_frame_->temperatures_.data(), latest_frame_->temperatures_.size()*sizeof(float));
         new_preview_frame_ = true;
+    }
+    else
+    {
+        return;
     }
     preview_cv_.notify_one();
 }
 
-const ThermalFrame* Thermal::requestPreviewFrame()
+const ums::Thermal::ThermalFrame* ums::Thermal::acquirePreviewFrame()
 {
     {
-        std::unique_lock<std::mutex> lock(latest_frame_mutex_);
+        std::unique_lock<std::mutex> lock(preview_mutex_);
         preview_cv_.wait(lock, [this] {return new_preview_frame_;});
-        memcpy(preview_buffer_.temperatures_.data(), latest_frame_->temperatures_.data(), latest_frame_->temperatures_.size()*sizeof(float));
         new_preview_frame_ = false;
-        return &preview_buffer_;
+        //HERE ENDS UNIQUE LOCK SCOPE
     }
+    //THIS LOCKS THE ACTUAL BUFFER FOR FRONTEND until releasePreviewFrame() runs and unlocks it
+    preview_mutex_.lock();
+    return &preview_buffer_;
+}
+
+void ums::Thermal::releasePreviewFrame()
+{
+    preview_mutex_.unlock();
 }

@@ -27,6 +27,9 @@ namespace ums {
             virtual void releasePreviewFrame() = 0;
 
         protected:
+            //STATE: called internally by setState() and must block until all internal threads
+            //have spun/joined
+            virtual void handleStateTransition(ums::UmsDaemon::State state);
             //INVARIANT: Acqusition runs constantly once constructor initialises its thread and 
             //updates each subsystem's local buffer, i.e. at the end of acquisitionLoop() each
             //class' latest_frame_ of $Subsystem$Frame datatype SHOULD HAVE OWNERSHIP.
@@ -35,29 +38,31 @@ namespace ums {
             //before releasing the subsystem buffer but DOES NOT HAVE OWNERSHIP AT ANY POINT.
             virtual void acquisitionLoop() = 0;
             //STATE: stateExecution() is internally called by acquisition loop to proceed to one
-            //of 3 paths:
+            //of 3 paths based on class' current_state_ set via setState():
             //1. IDLE : fillPreview() only.
             //2. STILL_CAPTURE : saveFrame() only with some sync.
-            //3. VIDEO_CAPTURE : fillPreview() with quantisedEnqueue().
-            virtual void stateExecution(ums::UmsDaemon::State state) = 0;
-            //STATE: called internally by setState() and must block until all internal threads
-            //have spun/joined
-            virtual void handleStateTransition();
+            //3. VIDEO_CAPTURE : fillPreview() with writeEnqueue().
+            virtual void stateExecution() = 0;
             //Copies latest_frame_ data into subsystem managed preview_buffer_.
             //
             //EXCEPTIONS: Does not apply to Frontend and Trigger Subsystems.
             virtual void fillPreview() = 0;
-            //Quantises and enqueues the latest frame in the subsystem managed ring buffer.
+            //Enqueues the latest frame in the subsystem managed ring buffer, Quantises if needed.
             //
             //EXCEPTIONS: Does not apply to Frontend and Trigger Subsystems.
-            virtual void quantisedEnqueue() = 0;
-            //GENERAL: saveFrame() is the generalised implementation of a common worker and
-            //is responsible for the destruction of the frame recieved as OWNERSHIP IS
-            //TRANSFERRED and memory is freed at end of scope.
+            virtual void writeEnqueue() = 0;
+            //THREAD: writerWorker() is always an independent thread that dequeues and saves Frame
+            //to disk
+            //
+            //EXCEPTIONS: RGB, Mic, Frontend, and Trigger don't need this.
+            virtual void writerWorker() = 0;
+            //OWNERSHIP: saveFrame() is the implementation of a class writer worker and is
+            //responsible for the destruction of the frame recieved as OWNERSHIP IS TRANSFERRED
+            //and memory is freed at end of scope.
             //
             //EXCEPTIONS:
             //1. RGB and mic subsystems have their own save implementation in seperate apps.
             //2. Frontend an Trigger subsystems don't need this.
-            void saveFrame(std::string file_path, std::unique_ptr<Frame> frame);
+            virtual void saveFrame(std::unique_ptr<Frame> frame) = 0;
     };
 }
