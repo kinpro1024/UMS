@@ -29,7 +29,7 @@ namespace ums {
         protected:
             //STATE: called internally by setState() and must block until all internal threads
             //have spun/joined
-            virtual void handleStateTransition(ums::UmsDaemon::State state);
+            virtual void handleStateTransition() = 0;
             //INVARIANT: Acqusition runs constantly once constructor initialises its thread and 
             //updates each subsystem's local buffer, i.e. at the end of acquisitionLoop() each
             //class' latest_frame_ of $Subsystem$Frame datatype SHOULD HAVE OWNERSHIP.

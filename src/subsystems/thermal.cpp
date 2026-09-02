@@ -68,6 +68,7 @@ void ums::Thermal::acquisitionLoop()
 
 void ums::Thermal::stateExecution()
 {
+    std::unique_ptr<Frame> frame;
     switch (current_state_)
     {
         case ums::UmsDaemon::State::IDLE:
@@ -75,10 +76,15 @@ void ums::Thermal::stateExecution()
             break;
 
         case ums::UmsDaemon::State::STILL_CAPTURE:
-            std::unique_ptr<Frame> frame = std::move(latest_frame_);
+            frame = std::move(latest_frame_);
             saveFrame(frame);
             break;
         
+        case ums::UmsDaemon::State::VIDEO_CAPTURE:
+            fillPreview();
+            writeEnqueue();
+            break;
+
         default:
             break;
     }
@@ -114,4 +120,9 @@ const ums::Thermal::ThermalFrame* ums::Thermal::acquirePreviewFrame()
 void ums::Thermal::releasePreviewFrame()
 {
     preview_mutex_.unlock();
+}
+
+void ums::Thermal::saveFrame(std::unique_ptr<Frame> frame)
+{
+    
 }
