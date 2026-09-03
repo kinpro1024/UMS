@@ -1,4 +1,4 @@
-#include "thermal.hpp"
+#include "thermal_wrapper.hpp"
 #include <vector>
 #include <chrono>
 #include <fstream>
@@ -117,7 +117,7 @@ int main() {
     TimeType start_comms_init = std::chrono::steady_clock::now(); 
 
     Mlx90640 thermalcam;
-    std::unique_ptr<ThermalFrame> frame;
+    std::unique_ptr<ThermalWrapperFrame> frame;
 
     if (thermalcam.sensorInit(0x07)) {
         std::cerr << "Initialisation Failed!!!\n";
