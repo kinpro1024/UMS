@@ -31,7 +31,7 @@ namespace ums
                 {
                     throw std::runtime_error("THERMAL INIT FAILED");
                 }
-                std::thread aq_thread_(&acquisitionLoop, this);
+                aq_thread_ = std::thread(&acquisitionLoop, this);
             }
             ~Thermal()
             {
@@ -44,64 +44,39 @@ namespace ums
             void releasePreviewFrame();
 
         protected:
-            void acquisitionLoop() override;
-            void fillPreview() override;
+            std::unique_ptr<Frame> acquireLatestFrame() override;
+            Subsystem::Frame* copyToBuffer(Frame* preview) override;
             void saveFrame(std::unique_ptr<Frame> frame) override;
 
         private:
             std::thread aq_thread_;
             bool abort_acquisition_loop_ = false;
-            ThermalFrame preview_buffer_;
+            ThermalFrame thermal_preview_buffer_;
             Mlx90640 thermal_cam_;
-            std::unique_ptr<ThermalFrame> latest_frame_  = std::make_unique<ThermalFrame>();
-            ThermalFrame preview_buffer_;
             bool new_preview_frame_ = false;
             std::mutex preview_mutex_;
             std::condition_variable preview_cv_;
     };
 }
 
-const ums::Thermal::ThermalFrame* ums::Thermal::acquirePreviewFrame()
+std::unique_ptr<ums::Subsystem::Frame> ums::Thermal::acquireLatestFrame()
 {
+    std::unique_ptr<ThermalFrame> latest_thermal_frame_  = std::make_unique<ThermalFrame>();
+    std::unique_ptr<ThermalWrapperFrame> new_frame = thermal_cam_.requestFullFrame(500);
+    if (!new_frame)
     {
-        std::unique_lock<std::mutex> lock(preview_mutex_);
-        preview_cv_.wait(lock, [this] {return new_preview_frame_;});
-        new_preview_frame_ = false;
-        //HERE ENDS UNIQUE LOCK SCOPE!!!!
+        return nullptr;
     }
-    //THIS LOCKS THE ACTUAL BUFFER FOR FRONTEND until releasePreviewFrame() runs and unlocks it.
-    preview_mutex_.lock();
-    return &preview_buffer_;
+    latest_thermal_frame_->temperatures_ = std::move(new_frame->temperatures);
+    latest_thermal_frame_->timestamp_ = new_frame->timestamp;
+    return latest_thermal_frame_;
 }
 
-void ums::Thermal::releasePreviewFrame()
+ums::Subsystem::Frame* ums::Thermal::copyToBuffer(ums::Subsystem::Frame* frame)
 {
-    preview_mutex_.unlock();
-}
-
-void ums::Thermal::acquisitionLoop()
-{
-    while(!abort_acquisition_loop_)
-    {
-        std::unique_ptr<ThermalWrapperFrame> new_frame = thermal_cam_.requestFullFrame(500);
-        if (!new_frame)
-        {
-            return;
-        }
-        latest_frame_->temperatures_ = std::move(new_frame->temperatures);
-        latest_frame_->timestamp_ = new_frame->timestamp;
-        stateExecution();
-    }
-}
-
-void ums::Thermal::fillPreview()
-{
-    std::unique_lock<std::mutex> lock(preview_mutex_, std::try_to_lock);
-    if (lock.owns_lock())
-    {
-        memcpy(preview_buffer_.temperatures_.data(), latest_frame_->temperatures_.data(), latest_frame_->temperatures_.size()*sizeof(float));
-        new_preview_frame_ = true;
-    }
+    ThermalFrame* thframe = static_cast<ThermalFrame*>(frame);
+    memcpy(thermal_preview_buffer_.temperatures_.data(), thframe->temperatures_.data(), thframe->temperatures_.size()*sizeof(float));
+    return &thermal_preview_buffer_;
 }
 
 void ums::Thermal::saveFrame(std::unique_ptr<Frame> frame)
@@ -112,6 +87,6 @@ void ums::Thermal::saveFrame(std::unique_ptr<Frame> frame)
     long long tstp = std::chrono::duration_cast<std::chrono::microseconds>(save_data->timestamp_.time_since_epoch()).count();
     std::string filename1 = "temps_" + std::to_string(32) + "_" + std::to_string(24) + "_float_" + std::to_string(tstp) + ".raw";
     std::ofstream file1(filename1, std::ios::binary);
-    file1.write(reinterpret_cast<char*>(save_data->temperatures_.data()),sizeof(save_data->temperatures_.size()*sizeof(float)));
+    file1.write(reinterpret_cast<char*>(save_data->temperatures_.data()),save_data->temperatures_.size()*sizeof(float));
     file1.close();
 }
