@@ -27,37 +27,30 @@ namespace ums
             {
                 Params thermal_params_{true, true, true, 120};
                 setParams(thermal_params_);
+                setPreviewBufferAddress(&thermal_preview_buffer_);
                 if (thermal_cam_.sensorInit(0x07)) //0x07 corresponds to 64Hz refresh rate on the MLX90640 sensor
                 {
                     throw std::runtime_error("THERMAL INIT FAILED");
                 }
-                aq_thread_ = std::thread(&acquisitionLoop, this);
+                startAcquisitionMachinery();
             }
             ~Thermal()
             {
-                abort_acquisition_loop_ = true;
-                aq_thread_.join();
+                stopAcquisitionMachinery();
             }
-
-            void setState(UmsDaemon::State state);
-            const ThermalFrame* acquirePreviewFrame();
-            void releasePreviewFrame();
 
         protected:
             std::unique_ptr<Frame> acquireLatestFrame() override;
-            Subsystem::Frame* copyToBuffer(Frame* preview) override;
-            void saveFrame(std::unique_ptr<Frame> frame) override;
+            void copyToPreviewBuffer(Frame* preview) override;
+            void saveFrame(std::unique_ptr<Frame> frame, UmsDaemon::State state) override;
 
         private:
-            std::thread aq_thread_;
-            bool abort_acquisition_loop_ = false;
             ThermalFrame thermal_preview_buffer_;
             Mlx90640 thermal_cam_;
-            bool new_preview_frame_ = false;
-            std::mutex preview_mutex_;
-            std::condition_variable preview_cv_;
     };
 }
+
+//--------------------------------------------------------------------------------------------------------------------------
 
 std::unique_ptr<ums::Subsystem::Frame> ums::Thermal::acquireLatestFrame()
 {
@@ -72,14 +65,17 @@ std::unique_ptr<ums::Subsystem::Frame> ums::Thermal::acquireLatestFrame()
     return latest_thermal_frame_;
 }
 
-ums::Subsystem::Frame* ums::Thermal::copyToBuffer(ums::Subsystem::Frame* frame)
+//--------------------------------------------------------------------------------------------------------------------------
+
+void ums::Thermal::copyToPreviewBuffer(ums::Subsystem::Frame* frame)
 {
     ThermalFrame* thframe = static_cast<ThermalFrame*>(frame);
     memcpy(thermal_preview_buffer_.temperatures_.data(), thframe->temperatures_.data(), thframe->temperatures_.size()*sizeof(float));
-    return &thermal_preview_buffer_;
 }
 
-void ums::Thermal::saveFrame(std::unique_ptr<Frame> frame)
+//--------------------------------------------------------------------------------------------------------------------------
+
+void ums::Thermal::saveFrame(std::unique_ptr<Frame> frame, ums::UmsDaemon::State state)
 {
     //Use this for the save and let both get destroyed at end of scope as unique_ptr is destroyed.
     ThermalFrame* save_data = static_cast<ThermalFrame*>(frame.get());
@@ -90,3 +86,5 @@ void ums::Thermal::saveFrame(std::unique_ptr<Frame> frame)
     file1.write(reinterpret_cast<char*>(save_data->temperatures_.data()),save_data->temperatures_.size()*sizeof(float));
     file1.close();
 }
+
+//--------------------------------------------------------------------------------------------------------------------------
