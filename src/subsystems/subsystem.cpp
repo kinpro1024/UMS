@@ -43,7 +43,7 @@ void ums::Subsystem::handleStateTransition(ums::UmsDaemon::State new_state)
         if (subsystem_params_.supports_video_)
         {
             abort_writer_worker_ = false;
-            writer_thread_ = std::thread(&writerWorker, this);
+            writer_thread_ = std::thread(&ums::Subsystem::writerWorker, this);
         }
         else
         {
@@ -79,7 +79,7 @@ void ums::Subsystem::setParams(Params params)
 
 void ums::Subsystem::startAcquisitionMachinery()
 {
-    aq_thread_ = std::thread(&acquisitionLoop, this);
+    aq_thread_ = std::thread(&ums::Subsystem::acquisitionLoop, this);
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
