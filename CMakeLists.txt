@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(ums
+    src/main.cpp
     src/subsystems/subsystem.cpp
     src/subsystems/thermal.cpp
     src/wrappers/thermal_wrapper.cpp

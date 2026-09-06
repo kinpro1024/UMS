@@ -8,8 +8,11 @@
 #include <chrono>
 #include <memory>
 
-#include "MLX90640_API.h"
-#include "MLX90640_I2C_Driver.h"
+extern "C"
+{
+	#include "MLX90640_API.h"
+	#include "MLX90640_I2C_Driver.h"
+}
 #include "thermal_wrapper.hpp"
 
 
