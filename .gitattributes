@@ -1,2 +1,5 @@
 *.stl filter=lfs diff=lfs merge=lfs -text
 3D_files/** filter=lfs diff=lfs merge=lfs -text
+
+ui/Ums/Dependencies/** linguist-generated
+ui/Ums/third_party/** linguist-vendored
