@@ -10,7 +10,6 @@ import QtQuick
 import QtQuick.Controls
 import Ums
 import QtQuick.Studio.DesignEffects
-import QtMultimedia
 import QtQuick.Studio.Effects
 
 Rectangle {

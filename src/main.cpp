@@ -1,7 +1,16 @@
 
-#include <iostream>
+#include <QApplication>
+#include <QQmlApplicationEngine>
 
-int main()
+int main(int argc, char *argv[])
 {
-	std::cout << "Hello World" << std::endl;
+    QApplication app(argc, argv);
+
+    QQmlApplicationEngine engine;
+    engine.loadFromModule("UmsContent", "App");
+
+    if (engine.rootObjects().isEmpty())
+        return -1;
+
+    return app.exec();
 }

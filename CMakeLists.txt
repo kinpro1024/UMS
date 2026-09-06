@@ -33,15 +33,24 @@ target_compile_options(ums PRIVATE
 )
 
 target_link_libraries(ums PRIVATE
-    pthread
+
 )
 
 add_subdirectory(ui/Ums/Ums)
 add_subdirectory(ui/Ums/UmsContent)
+add_subdirectory(ui/Ums/Dependencies/Components)
 
 target_link_libraries(ums PRIVATE
-    Ums
-    UmsContent
+    pthread
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
     Qt6::Quick
     Qt6::Qml
+
+    Ums
+    UmsContent
+    Umsplugin
+    UmsContentplugin
+    QtQuickDesignerComponents
 )
