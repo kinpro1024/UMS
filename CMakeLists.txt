@@ -5,6 +5,11 @@ project(ums)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickTimeline ShaderTools)
+
 add_executable(ums
     src/main.cpp
     src/subsystems/subsystem.cpp
@@ -29,4 +34,14 @@ target_compile_options(ums PRIVATE
 
 target_link_libraries(ums PRIVATE
     pthread
+)
+
+add_subdirectory(ui/Ums/Ums)
+add_subdirectory(ui/Ums/UmsContent)
+
+target_link_libraries(ums PRIVATE
+    Ums
+    UmsContent
+    Qt6::Quick
+    Qt6::Qml
 )

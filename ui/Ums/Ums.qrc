@@ -1,0 +1,13 @@
+<RCC>
+    <qresource>
+        <file>qtquickcontrols2.conf</file>
+        <file>Ums.qmlproject</file>
+        <file>Ums/Constants.qml</file>
+        <file>Ums/EventListModel.qml</file>
+        <file>Ums/EventListSimulator.qml</file>
+        <file>Ums/qmldir</file>
+        <file>UmsContent/App.qml</file>
+        <file>UmsContent/images/ums.001.png</file>
+        <file>UmsContent/Screen01.ui.qml</file>
+    </qresource>
+</RCC>
