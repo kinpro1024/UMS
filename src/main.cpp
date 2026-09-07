@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     worker->start();
 
     ums::Ui ui;
-    int result = ui.appStuff(argc, argv);
+    int result = ui.appStuff(argc, argv, tp);
 
     worker->requestInterruption();
     worker->wait();

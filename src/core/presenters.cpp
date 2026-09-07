@@ -57,3 +57,25 @@ void ums::ThermalPresenter::loop()
         convertAndEmit();
     }
 }
+
+int ums::ThermalPresenter::frameCounter() const
+{
+    return m_counter;
+}
+
+QImage ums::ThermalPresenter::currentImage() const
+{
+    QMutexLocker locker(&m_mutex);
+    return m_image;
+}
+
+void ums::ThermalPresenter::updateImage(QImage image)
+{
+    {
+        QMutexLocker locker(&m_mutex);
+        m_image = std::move(image);
+    }
+
+    ++m_counter;
+    emit frameCounterChanged();
+}

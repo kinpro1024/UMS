@@ -81,7 +81,7 @@ Rectangle {
                 y: 10
                 width: 620
                 height: 465
-                source: "images/ums.001.png"
+                source: "image://thermal/" + thermalPresenter.frameCounter
                 layer.enabled: true
                 layer.effect: OpacityMaskEffect {
                     id: opacityMask1
