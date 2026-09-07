@@ -1,20 +1,23 @@
 
-#include "umsd.hpp"
+#include "ui.hpp"
 
 //==========================================================================================================================
-//MASTER FUNCTIONS
+//UI BULLSHIT
 //==========================================================================================================================
 
-void ums::UmsDaemon::setGlobalState(ums::State new_state)
+int ums::Ui::appStuff(int argc_, char *argv_[])
 {
-    state_ = new_state;
-}
+    QApplication app(argc_, argv_);
 
-//--------------------------------------------------------------------------------------------------------------------------
+    QQmlApplicationEngine engine;
+    engine.loadFromModule("UmsContent", "App");
 
-ums::State ums::UmsDaemon::getGlobalState() const
-{
-    return state_;
+    if (engine.rootObjects().isEmpty())
+    {
+        return -1;
+    }
+
+    return app.exec();
 }
 
 //--------------------------------------------------------------------------------------------------------------------------

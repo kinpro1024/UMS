@@ -1,25 +1,26 @@
+
 #pragma once
+
+#include "subsystem_manager.hpp"
+#include "state.hpp"
 
 namespace ums
 {
     class UmsDaemon
     {
         public:
-            enum class State
-            {
-                IDLE,
-                STILL_CAPTURE,
-                VIDEO_CAPTURE
-            };
-
         UmsDaemon()
-            : state_(State::IDLE)
-            {}
+        {
+            state_ = State::IDLE;
+            subsystem_manager_ = std::make_unique<SubsystemManager>();
+            subsystem_manager_->setAllSubsystems(state_);
+        }
 
-        void setState(State new_state);
-        State getState() const;
+        void setGlobalState(State new_state);
+        State getGlobalState() const;
 
         private:
             State state_;
+            std::unique_ptr<SubsystemManager> subsystem_manager_;
     };
 }

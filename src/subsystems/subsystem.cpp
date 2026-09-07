@@ -5,7 +5,7 @@
 //STATE
 //==========================================================================================================================
 
-void ums::Subsystem::setState(ums::UmsDaemon::State state)
+void ums::Subsystem::setState(ums::State state)
 {
     if (current_state_.load() == state)
     {
@@ -17,11 +17,11 @@ void ums::Subsystem::setState(ums::UmsDaemon::State state)
 
 //--------------------------------------------------------------------------------------------------------------------------
 
-void ums::Subsystem::handleStateTransition(ums::UmsDaemon::State new_state)
+void ums::Subsystem::handleStateTransition(ums::State new_state)
 {
-    ums::UmsDaemon::State curr_state_ = current_state_.load();
+    ums::State curr_state_ = current_state_.load();
 
-    if (curr_state_ == ums::UmsDaemon::State::IDLE && new_state == ums::UmsDaemon::State::STILL_CAPTURE)
+    if (curr_state_ == ums::State::IDLE && new_state == ums::State::STILL_CAPTURE)
     {
         if (subsystem_params_.supports_still_)
         {
@@ -33,12 +33,12 @@ void ums::Subsystem::handleStateTransition(ums::UmsDaemon::State new_state)
         }
     }
 
-    else if (curr_state_ == ums::UmsDaemon::State::STILL_CAPTURE && new_state == ums::UmsDaemon::State::IDLE)
+    else if (curr_state_ == ums::State::STILL_CAPTURE && new_state == ums::State::IDLE)
     {
         ;
     }
 
-    else if (curr_state_ == ums::UmsDaemon::State::IDLE && new_state == ums::UmsDaemon::State::VIDEO_CAPTURE)
+    else if (curr_state_ == ums::State::IDLE && new_state == ums::State::VIDEO_CAPTURE)
     {
         if (subsystem_params_.supports_video_)
         {
@@ -51,7 +51,7 @@ void ums::Subsystem::handleStateTransition(ums::UmsDaemon::State new_state)
         }
     }
 
-    else if (curr_state_ == ums::UmsDaemon::State::VIDEO_CAPTURE && new_state == ums::UmsDaemon::State::IDLE)
+    else if (curr_state_ == ums::State::VIDEO_CAPTURE && new_state == ums::State::IDLE)
     {
         if (subsystem_params_.supports_video_)
         {
@@ -141,11 +141,11 @@ void ums::Subsystem::stateExecution()
 
     switch (current_state_.load())
     {
-        case ums::UmsDaemon::State::IDLE:
+        case ums::State::IDLE:
             fillPreview(latest_frame_.get());
             break;
 
-        case ums::UmsDaemon::State::STILL_CAPTURE:
+        case ums::State::STILL_CAPTURE:
 
             if (subsystem_params_.supports_still_)
             {
@@ -155,7 +155,7 @@ void ums::Subsystem::stateExecution()
 
             break;
 
-        case ums::UmsDaemon::State::VIDEO_CAPTURE:
+        case ums::State::VIDEO_CAPTURE:
             fillPreview(latest_frame_.get());
 
             if (subsystem_params_.supports_video_)
@@ -249,5 +249,19 @@ void ums::Subsystem::writerWorker()
         //Even though this only happens in video, maybe a future burst mode may need the state.load().
     }
 }
+
+//==========================================================================================================================
+//CUSTOM PIPELINE DEFAULTS
+//==========================================================================================================================
+
+void ums::Subsystem::customStillPipelineTrigger() {}
+
+//--------------------------------------------------------------------------------------------------------------------------
+
+void ums::Subsystem::customVideoPipelineStart() {}
+
+//--------------------------------------------------------------------------------------------------------------------------
+
+void ums::Subsystem::customVideoPipelineStop() {}
 
 //--------------------------------------------------------------------------------------------------------------------------

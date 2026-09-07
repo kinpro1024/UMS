@@ -12,12 +12,14 @@ find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickTimelin
 
 add_executable(ums
     src/main.cpp
+    src/core/umsd.cpp
+    src/core/ui.cpp
+    src/core/subsystem_manager.cpp
     src/subsystems/subsystem.cpp
     src/subsystems/thermal.cpp
     src/wrappers/thermal_wrapper.cpp
-    src/core/umsd.cpp
-    third_party/mlx90640/MLX90640_API.c
     src/wrappers/MLX90640_I2C_Driver.c
+    third_party/mlx90640/MLX90640_API.c
 )
 
 target_include_directories(ums PRIVATE
@@ -32,10 +34,6 @@ target_compile_options(ums PRIVATE
     -Wextra
 )
 
-target_link_libraries(ums PRIVATE
-
-)
-
 add_subdirectory(ui/Ums/Ums)
 add_subdirectory(ui/Ums/UmsContent)
 add_subdirectory(ui/Ums/Dependencies/Components)
@@ -47,7 +45,6 @@ target_link_libraries(ums PRIVATE
     Qt6::Widgets
     Qt6::Quick
     Qt6::Qml
-
     Ums
     UmsContent
     Umsplugin

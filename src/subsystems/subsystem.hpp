@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <vector>
@@ -9,8 +10,7 @@
 #include <condition_variable>
 #include <atomic>
 
-#include "umsd.hpp"
-
+#include "state.hpp"
 
 namespace ums {
     class Subsystem
@@ -32,13 +32,14 @@ namespace ums {
                 public:
                     virtual ~Frame() = default;
             };
+            
             virtual ~Subsystem() = default;
 
             //ATOMIC: This function is used by UmsDaemon to communicate states to all the
             //Subsystems via an atomic current_state_, also internally calls handleStateTransition()
             //for spinning/joining threads and such and only after handleStateTransition()
             //releases does it update Subsystem current_state_.
-            void setState(ums::UmsDaemon::State state);
+            void setState(State state);
 
         protected:
             //FRONTEND: These are the functions used by the preview threads to acquire frames
@@ -80,12 +81,12 @@ namespace ums {
             //EXCEPTIONS:
             //1. RGB and mic subsystems have their own save implementation in seperate apps.
             //2. Frontend an Trigger subsystems don't need this.
-            virtual void saveFrame(std::unique_ptr<Frame> frame, UmsDaemon::State state) = 0;
+            virtual void saveFrame(std::unique_ptr<Frame> frame, State state) = 0;
 
             //EXCEPTIONS: Used by exceptions to carry out needed processes.
-            virtual void customVideoPipelineStart() = 0;
-            virtual void customVideoPipelineStop() = 0;
-            virtual void customStillPipelineTrigger() = 0;
+            virtual void customVideoPipelineStart();
+            virtual void customVideoPipelineStop();
+            virtual void customStillPipelineTrigger();
 
         private:
             //STATE: stateExecution() is internally called by acquisition loop to proceed to one
@@ -110,7 +111,7 @@ namespace ums {
 
             //STATE: called internally by setState() and must block until all internal threads
             //have spun/joined.
-            void handleStateTransition(ums::UmsDaemon::State new_state);
+            void handleStateTransition(State new_state);
 
             //THREAD: writerWorker() is always an independent thread that dequeues and saves Frame
             //to disk.
@@ -118,7 +119,7 @@ namespace ums {
             //EXCEPTIONS: RGB, Mic, Frontend, and Trigger don't need this.
             void writerWorker();
 
-            std::atomic<UmsDaemon::State> current_state_{UmsDaemon::State::IDLE};
+            std::atomic<State> current_state_{State::IDLE};
             std::unique_ptr<Frame> latest_frame_;
             std::condition_variable buffer_cv_;
             std::condition_variable preview_cv_;

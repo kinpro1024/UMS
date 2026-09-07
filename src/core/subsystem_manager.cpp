@@ -1,20 +1,16 @@
 
-#include "umsd.hpp"
+#include "subsystem_manager.hpp"
 
 //==========================================================================================================================
-//MASTER FUNCTIONS
+//MANAGER FUNCTIONS
 //==========================================================================================================================
 
-void ums::UmsDaemon::setGlobalState(ums::State new_state)
+void ums::SubsystemManager::setAllSubsystems(ums::State state)
 {
-    state_ = new_state;
-}
-
-//--------------------------------------------------------------------------------------------------------------------------
-
-ums::State ums::UmsDaemon::getGlobalState() const
-{
-    return state_;
+    for (const auto& active_subsystem_ : active_subsystems_)
+    {
+        active_subsystem_->setState(state);
+    }
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
