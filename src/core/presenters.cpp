@@ -1,7 +1,9 @@
 
-#include <iostream>
-
 #include "presenters.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <cstring>
 
 void ums::ThermalPresenter::copy()
 {
@@ -13,23 +15,41 @@ void ums::ThermalPresenter::copy()
     curr_thermal_reference_.releasePreviewFrame();
 }
 
-void ums::ThermalPresenter::print()
+void ums::ThermalPresenter::convertAndEmit()
 {
-    for(int i = 0; i < presenter_buffer_.temperatures_.size(); ++i)
+    const auto& temperatures = presenter_buffer_.temperatures_;
+
+    auto [min_it, max_it] = std::minmax_element(temperatures.begin(), temperatures.end());
+
+    const float min_temp = *min_it;
+    const float max_temp = *max_it;
+
+    QImage image(32, 24, QImage::Format_Grayscale8);
+
+    const float range = max_temp - min_temp;
+
+    if (range == 0.0f || !std::isfinite(range))
     {
-        if ((i + 1) % 32 == 0)
-        {
-            std::cout << "\n";
-        }
-        std::cout << presenter_buffer_.temperatures_[i] << " , ";
+        image.fill(0);
     }
+
+    else
+    {
+        for (int i = 0; i < 768; ++i)
+        {
+            float normalised = (temperatures[i] - min_temp) / range;
+
+            normalised = std::clamp(normalised, 0.0f, 1.0f);
+
+            image.bits()[i] = static_cast<uchar>(normalised * 255.0f);
+        }
+    }
+
+    emit frameReady(image);
 }
 
 void ums::ThermalPresenter::loop()
 {
-    while (true)
-    {
-        copy();
-        print();
-    }
+    copy();
+    convertAndEmit();
 }
