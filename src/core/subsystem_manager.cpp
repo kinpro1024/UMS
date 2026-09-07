@@ -14,3 +14,9 @@ void ums::SubsystemManager::setAllSubsystems(ums::State state)
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
+
+ums::Thermal& ums::SubsystemManager::getThermalRef()
+{
+    ums::Thermal& ref = static_cast<ums::Thermal&>(*active_subsystems_[0]);
+    return ref;
+}

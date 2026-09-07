@@ -19,8 +19,9 @@ namespace ums
             }
 
             void setAllSubsystems(State state);
+            Thermal& getThermalRef();
 
-            private:
-                std::vector<std::unique_ptr<Subsystem>> active_subsystems_;
+        private:
+            std::vector<std::unique_ptr<Subsystem>> active_subsystems_;
     };
 }

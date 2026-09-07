@@ -41,7 +41,6 @@ namespace ums {
             //releases does it update Subsystem current_state_.
             void setState(State state);
 
-        protected:
             //FRONTEND: These are the functions used by the preview threads to acquire frames
             //from the Subsystems with synchronization mutexes that NEED TO BE RELEASED.
             //
@@ -52,6 +51,7 @@ namespace ums {
             //be reused by Subsystem.
             void releasePreviewFrame();
 
+        protected:
             //PARAMS: Sets parameters for optional paths as general implementation is universal.
             void setParams(Params params);
             //BUFFER: Stores memory address of the latest_$subsystem$_frame_.

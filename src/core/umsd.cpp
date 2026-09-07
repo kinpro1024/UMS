@@ -18,3 +18,9 @@ ums::State ums::UmsDaemon::getGlobalState() const
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
+
+ums::Thermal& ums::UmsDaemon::getThermalRefFromManager()
+{
+    ums::Thermal& ref = subsystem_manager_->getThermalRef();
+    return ref;
+}

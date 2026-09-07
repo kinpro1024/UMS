@@ -14,6 +14,7 @@ add_executable(ums
     src/main.cpp
     src/core/umsd.cpp
     src/core/ui.cpp
+    src/core/presenters.cpp
     src/core/subsystem_manager.cpp
     src/subsystems/subsystem.cpp
     src/subsystems/thermal.cpp

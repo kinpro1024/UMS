@@ -18,6 +18,7 @@ namespace ums
 
         void setGlobalState(State new_state);
         State getGlobalState() const;
+        Thermal& getThermalRefFromManager();
 
         private:
             State state_;
