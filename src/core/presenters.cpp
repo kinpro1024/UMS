@@ -17,11 +17,11 @@ void ums::ThermalPresenter::print()
 {
     for(int i = 0; i < presenter_buffer_.temperatures_.size(); ++i)
     {
-        if ((i + 1) % 32)
+        if ((i + 1) % 32 == 0)
         {
             std::cout << "\n";
         }
-        std::cout << presenter_buffer_.temperatures_[i] << std::endl;
+        std::cout << presenter_buffer_.temperatures_[i] << " , ";
     }
 }
 
