@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <QThread>
 
 void ums::ThermalPresenter::copy()
 {
@@ -50,6 +51,9 @@ void ums::ThermalPresenter::convertAndEmit()
 
 void ums::ThermalPresenter::loop()
 {
-    copy();
-    convertAndEmit();
+    while (!QThread::currentThread()->isInterruptionRequested())
+    {
+        copy();
+        convertAndEmit();
+    }
 }
