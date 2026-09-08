@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <QThread>
 
 void ums::ThermalPresenter::copy()
 {
@@ -50,6 +51,31 @@ void ums::ThermalPresenter::convertAndEmit()
 
 void ums::ThermalPresenter::loop()
 {
-    copy();
-    convertAndEmit();
+    while (!QThread::currentThread()->isInterruptionRequested())
+    {
+        copy();
+        convertAndEmit();
+    }
+}
+
+int ums::ThermalPresenter::frameCounter() const
+{
+    return m_counter;
+}
+
+QImage ums::ThermalPresenter::currentImage() const
+{
+    QMutexLocker locker(&m_mutex);
+    return m_image;
+}
+
+void ums::ThermalPresenter::updateImage(QImage image)
+{
+    {
+        QMutexLocker locker(&m_mutex);
+        m_image = std::move(image);
+    }
+
+    ++m_counter;
+    emit frameCounterChanged();
 }

@@ -1,13 +1,14 @@
 
 #include "core/umsd.hpp"
-#include "subsystems/subsystem.hpp"
 #include "core/presenters.hpp"
 #include "core/ui.hpp"
+#include "subsystems/subsystem.hpp"
+
+#include <QThread>
 
 int main(int argc, char *argv[])
 {
     ums::UmsDaemon umsd;
-
 
     ums::ThermalPresenter tp(umsd.getThermalRefFromManager());
 
@@ -18,8 +19,19 @@ int main(int argc, char *argv[])
         }
     );
 
-    tp.loop();
+    QThread* worker = QThread::create([&tp]()
+    {
+        tp.loop();
+    });
+
+    worker->start();
 
     ums::Ui ui;
-    ui.appStuff(argc, argv);
+    int result = ui.appStuff(argc, argv, tp);
+
+    worker->requestInterruption();
+    worker->wait();
+
+    delete worker;
+    return result;
 }
