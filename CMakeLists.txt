@@ -15,8 +15,7 @@ add_executable(ums
     src/main.cpp
     src/core/umsd.cpp
     src/core/ui.cpp
-    src/core/presenters.cpp
-    src/core/subsystem_manager.cpp
+    src/ui/thermal_presenter.cpp
     src/subsystems/subsystem.cpp
     src/subsystems/thermal.cpp
     src/wrappers/thermal_wrapper.cpp
@@ -26,6 +25,7 @@ add_executable(ums
 
 target_include_directories(ums PRIVATE
     src/core
+    src/ui
     src/subsystems
     src/wrappers
     third_party/mlx90640
@@ -36,9 +36,9 @@ target_compile_options(ums PRIVATE
     -Wextra
 )
 
-add_subdirectory(ui/Ums/Ums)
-add_subdirectory(ui/Ums/UmsContent)
-add_subdirectory(ui/Ums/Dependencies/Components)
+add_subdirectory(Qt/Ums/Ums)
+add_subdirectory(Qt/Ums/UmsContent)
+add_subdirectory(Qt/Ums/Dependencies/Components)
 
 target_link_libraries(ums PRIVATE
     pthread

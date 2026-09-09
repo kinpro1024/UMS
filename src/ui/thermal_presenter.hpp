@@ -1,9 +1,10 @@
 
 #pragma once
 
+#include <mutex>
+
 #include <QObject>
 #include <QImage>
-#include <QMutex>
 #include <QQuickImageProvider>
 
 #include "subsystem.hpp"
@@ -17,10 +18,11 @@ namespace ums
         Q_PROPERTY(int frameCounter
                    READ frameCounter
                    NOTIFY frameCounterChanged)
+
         public:
             ThermalPresenter(Thermal& manager_reference, QObject* parent = nullptr)
                 : QObject(parent),
-                curr_thermal_reference_(manager_reference)
+                  curr_thermal_reference_(manager_reference)
             {
                 connect(this, &ThermalPresenter::frameReady,
                         this, &ThermalPresenter::updateImage,
@@ -46,9 +48,9 @@ namespace ums
             Thermal& curr_thermal_reference_;
             Thermal::ThermalFrame presenter_buffer_;
 
-            mutable QMutex m_mutex;
-            QImage m_image;
-            int m_counter = 0;
+            mutable std::mutex m_mutex_;
+            QImage m_image_;
+            int m_counter_ = 0;
     };
 
     class ThermalImageProvider : public QQuickImageProvider

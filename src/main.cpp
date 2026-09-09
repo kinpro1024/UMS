@@ -1,6 +1,6 @@
 
 #include "core/umsd.hpp"
-#include "core/presenters.hpp"
+#include "ui/thermal_presenter.hpp"
 #include "core/ui.hpp"
 #include "subsystems/subsystem.hpp"
 
@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 {
     ums::UmsDaemon umsd;
 
-    ums::ThermalPresenter tp(umsd.getThermalRefFromManager());
+    ums::ThermalPresenter tp(umsd.getThermalRef());
 
     QObject::connect(&tp, &ums::ThermalPresenter::frameReady,
         [](const QImage& image)

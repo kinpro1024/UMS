@@ -1,5 +1,5 @@
 
-#include "presenters.hpp"
+#include "thermal_presenter.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -60,22 +60,22 @@ void ums::ThermalPresenter::loop()
 
 int ums::ThermalPresenter::frameCounter() const
 {
-    return m_counter;
+    return m_counter_;
 }
 
 QImage ums::ThermalPresenter::currentImage() const
 {
-    QMutexLocker locker(&m_mutex);
-    return m_image;
+    std::lock_guard<std::mutex> lock(m_mutex_);
+    return m_image_;
 }
 
 void ums::ThermalPresenter::updateImage(QImage image)
 {
     {
-        QMutexLocker locker(&m_mutex);
-        m_image = std::move(image);
+        std::lock_guard<std::mutex> lock(m_mutex_);
+        m_image_ = std::move(image);
     }
 
-    ++m_counter;
+    ++m_counter_;
     emit frameCounterChanged();
 }

@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "presenters.hpp"
+#include "thermal_presenter.hpp"
 
 #include <QApplication>
 #include <QQmlApplicationEngine>

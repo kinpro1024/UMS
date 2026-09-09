@@ -1,8 +1,9 @@
 
 #pragma once
 
-#include "subsystem_manager.hpp"
 #include "state.hpp"
+#include "subsystem.hpp"
+#include "thermal.hpp"
 
 namespace ums
 {
@@ -10,18 +11,20 @@ namespace ums
     {
         public:
         UmsDaemon()
+            :state_(State::IDLE)
         {
-            state_ = State::IDLE;
-            subsystem_manager_ = std::make_unique<SubsystemManager>();
-            subsystem_manager_->setAllSubsystems(state_);
+            //Constructor creates all subsystems and appends them to active_subsystems_
+            //any new additions to Subsystem MUST BE REFLECTED HERE
+            active_subsystems_.push_back(std::make_unique<Thermal>());
+            setGlobalState(state_);
         }
 
         void setGlobalState(State new_state);
         State getGlobalState() const;
-        Thermal& getThermalRefFromManager();
+        Thermal& getThermalRef();
 
         private:
             State state_;
-            std::unique_ptr<SubsystemManager> subsystem_manager_;
+            std::vector<std::unique_ptr<Subsystem>> active_subsystems_;
     };
 }

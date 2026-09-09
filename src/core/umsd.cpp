@@ -7,6 +7,11 @@
 
 void ums::UmsDaemon::setGlobalState(ums::State new_state)
 {
+    for (const auto& active_subsystem_ : active_subsystems_)
+    {
+        active_subsystem_->setState(new_state);
+    }
+
     state_ = new_state;
 }
 
@@ -19,8 +24,9 @@ ums::State ums::UmsDaemon::getGlobalState() const
 
 //--------------------------------------------------------------------------------------------------------------------------
 
-ums::Thermal& ums::UmsDaemon::getThermalRefFromManager()
+ums::Thermal& ums::UmsDaemon::getThermalRef()
 {
-    ums::Thermal& ref = subsystem_manager_->getThermalRef();
+    //Because std::vector<std::unique_ptr<ums::Subsystem>>, it upcasts to Subsystem&
+    ums::Thermal& ref = static_cast<ums::Thermal&>(*active_subsystems_[0]);
     return ref;
 }
