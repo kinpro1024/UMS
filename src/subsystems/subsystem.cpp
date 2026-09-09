@@ -116,7 +116,7 @@ void ums::Subsystem::acquisitionLoop()
             continue;
         }
 
-        stateExecution();
+        stateExecution(current_state_.load());
     }
 }
 
@@ -139,11 +139,11 @@ void ums::Subsystem::fillPreview(ums::Subsystem::Frame* preview)
 
 //--------------------------------------------------------------------------------------------------------------------------
 
-void ums::Subsystem::stateExecution()
+void ums::Subsystem::stateExecution(State state)
 {
     std::unique_ptr<Frame> frame;
 
-    switch (current_state_.load())
+    switch (state)
     {
         case ums::State::IDLE:
             fillPreview(latest_frame_.get());
@@ -154,7 +154,7 @@ void ums::Subsystem::stateExecution()
             if (subsystem_params_.supports_still_)
             {
                 frame = std::move(latest_frame_);
-                saveFrame(std::move(frame), current_state_.load());
+                saveFrame(std::move(frame), state);
             }
 
             break;
@@ -249,8 +249,8 @@ void ums::Subsystem::writerWorker()
             head_ = (head_ + 1) % writer_buffer_.size();
             --buffer_occupancy_;
         }
-        saveFrame(std::move(writer_worker_buffer_), current_state_.load());
-        //Even though this only happens in video, maybe a future burst mode may need the state.load().
+
+        saveFrame(std::move(writer_worker_buffer_), State::VIDEO_CAPTURE);
     }
 }
 

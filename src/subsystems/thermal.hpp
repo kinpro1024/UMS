@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <cstring>
+
 #include "subsystem.hpp"
 #include "../wrappers/thermal_wrapper.hpp"
 

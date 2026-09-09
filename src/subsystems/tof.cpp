@@ -1,100 +1,106 @@
-#include <mutex>
-#include <condition_variable>
-#include "subsystem.hpp"
-#include "ArducamTOFCamera.hpp"
-#include <cstring>
 
-class TofFrame : public Subsystem::Frame
+#include "tof.hpp"
+
+//==========================================================================================================================
+//THERMAL - STANDARD PIPELINES
+//==========================================================================================================================
+
+std::unique_ptr<ums::Subsystem::Frame> ums::Tof::acquireLatestFrame()
 {
-    public:
-        std::vector<float> depth_data_;
-        std::vector<float> confidence_data_;
-        std::chrono::steady_clock::time_point timestamp_;
+    std::unique_ptr<TofFrame> latest_tof_frame_  = std::make_unique<TofFrame>();
 
-        TofFrame()
-        : depth_data_(240*180),
-          confidence_data_(240*180)
-          {}
-};
-
-class Tof : public Subsystem
-{
-    public:
-        int init() override;
-        void idle() override;
-        void stillCapture() override;
-        void videoCapture() override;
-        void deinit() override;
-
-        const TofFrame* requestPreviewFrame() override;
-
-    protected:
-        void acquisitionLoop() override;
-
-    private:
-        Arducam::ArducamTOFCamera tof_;
-        std::unique_ptr<TofFrame> latest_frame_ = std::make_unique<TofFrame>();
-        std::condition_variable preview_cv_;
-        std::mutex latest_frame_mutex_;
-        TofFrame preview_buffer_;
-        bool new_preview_frame_ = false;
-        const int MAX_DISTANCE_ = 4000;
-        const int MAX_WIDTH_ = 240;
-        const int MAX_HEIGHT_ = 180;
-        int max_range_ = 0;
-        const int FRAME_SIZE_ = MAX_HEIGHT_ * MAX_WIDTH_;
-};
-
-int Tof::init()
-{
-    if (tof_.open(Arducam::Connection::CSI, 8)) //8 when both RGB camera and ToF are connected via CSI
-    {
-        return 1;
-    }
-    if (tof_.start(Arducam::FrameType::DEPTH_FRAME))
-    {
-        return 1;
-    }
-    tof_.setControl(Arducam::Control::RANGE, MAX_DISTANCE_);
-    tof_.getControl(Arducam::Control::RANGE, &max_range_);
-    return 0;
-}
-
-void Tof::acquisitionLoop()
-{
     Arducam::ArducamFrameBuffer* new_frame = tof_.requestFrame(200);
     std::chrono::steady_clock::time_point new_timestamp = std::chrono::steady_clock::now();
+
     if (new_frame == nullptr)
     {
-        return;
+        return nullptr;
     }
+
     float* depth_ptr = (float*)new_frame->getData(Arducam::FrameType::DEPTH_FRAME);
     float* confidence_ptr = (float*)new_frame->getData(Arducam::FrameType::CONFIDENCE_FRAME);
-    //Because the bloody function returns a pointer to a buffer, I need 
-    //to copy to a persistent data structure so I can release the buffer
-    std::vector<float> temp_depth_buffer(FRAME_SIZE_);
-    std::vector<float> temp_confidence_buffer(FRAME_SIZE_);
-    memcpy(temp_depth_buffer.data(), depth_ptr, FRAME_SIZE_*sizeof(float));
-    memcpy(temp_confidence_buffer.data(), confidence_ptr, FRAME_SIZE_*sizeof(float));
-    {
-        std::lock_guard<std::mutex> lock(latest_frame_mutex_);
-        latest_frame_->depth_data_ = std::move(temp_depth_buffer);
-        latest_frame_->confidence_data_ = std::move(temp_confidence_buffer);
-        latest_frame_->timestamp_ = new_timestamp;
-        new_preview_frame_ = true;
-    }
-    preview_cv_.notify_one();
+
+    memcpy(latest_tof_frame_->depth_data_.data(), depth_ptr, FRAME_SIZE_*sizeof(float));
+    memcpy(latest_tof_frame_->confidence_data_.data(), confidence_ptr, FRAME_SIZE_*sizeof(float));
+    latest_tof_frame_->timestamp_ = new_timestamp;
+
     tof_.releaseFrame(new_frame);
+
+    return latest_tof_frame_;
 }
 
-const TofFrame* Tof::requestPreviewFrame()
+//--------------------------------------------------------------------------------------------------------------------------
+
+void ums::Tof::copyToPreviewBuffer(ums::Subsystem::Frame* frame)
 {
-    {
-        std::unique_lock<std::mutex> lock(latest_frame_mutex_);
-        preview_cv_.wait(lock, [this] {return new_preview_frame_;});
-        //preview does not need anything except depth data
-        memcpy(preview_buffer_.depth_data_.data(), latest_frame_->depth_data_.data(), latest_frame_->depth_data_.size()*sizeof(float));
-        new_preview_frame_ = false;
-        return &preview_buffer_;
-    }
+    TofFrame* tofframe = static_cast<TofFrame*>(frame);
+    memcpy(tof_preview_buffer_.depth_data_.data(), tofframe->depth_data_.data(), tofframe->depth_data_.size()*sizeof(float));
 }
+
+//--------------------------------------------------------------------------------------------------------------------------
+
+std::unique_ptr<ums::Subsystem::Frame> ums::Tof::prepareFrame(std::unique_ptr<Frame> frame)
+{
+    TofFrame* working_frame = static_cast<TofFrame*>(frame.get());
+    std::unique_ptr<TofQuantFrame> quantised_frame = std::make_unique<TofQuantFrame>();
+
+    for (int i = 0; i < FRAME_SIZE_; ++i)
+    {
+        quantised_frame->qdepth_data_[i] = static_cast<uint16_t>(working_frame->depth_data_[i]*10.0f);
+        quantised_frame->qconfidence_data_[i] = static_cast<uint16_t>(working_frame->confidence_data_[i]*10.0f);
+    }
+        
+    quantised_frame->qtimestamp_ = working_frame->timestamp_;
+
+    return quantised_frame;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+
+void ums::Tof::saveFrame(std::unique_ptr<Frame> frame, ums::State state)
+{
+    if (state == State::VIDEO_CAPTURE)
+    {
+        //Use this for the save and let both get destroyed at end of scope as unique_ptr is destroyed.
+        TofQuantFrame* save_dataq = static_cast<TofQuantFrame*>(frame.get());
+
+        // filename = "depth_$width$_$height$_uint_16_$time.raw"
+        long long tstp = std::chrono::duration_cast<std::chrono::microseconds>(save_dataq->qtimestamp_.time_since_epoch()).count();
+
+        std::string filename1 =
+            "depth_" + std::to_string(MAX_WIDTH_) + "_" + std::to_string(MAX_HEIGHT_) + "_uint16_depth_" + std::to_string(tstp) + ".raw";
+        std::ofstream file1(filename1, std::ios::binary);
+        file1.write(reinterpret_cast<char*>(save_dataq->qdepth_data_.data()), MAX_WIDTH_ * MAX_HEIGHT_ * sizeof(uint16_t));
+        file1.close();
+
+        std::string filename2 =
+            "confidence_" + std::to_string(MAX_WIDTH_) + "_" + std::to_string(MAX_HEIGHT_) + "_uint_16_confidence_" + std::to_string(tstp) + ".raw";
+        std::ofstream file2(filename2, std::ios::binary);
+        file2.write(reinterpret_cast<char*>(save_dataq->qconfidence_data_.data()), MAX_WIDTH_ * MAX_HEIGHT_ * sizeof(uint16_t));
+        file2.close();
+    }
+
+    else if (state == State::STILL_CAPTURE)
+    {
+        //Use this for the save and let both get destroyed at end of scope as unique_ptr is destroyed.
+        TofFrame* save_data = static_cast<TofFrame*>(frame.get());
+
+        // filename = "depth_$width$_$height$_float_$time.raw"
+        long long tstp = std::chrono::duration_cast<std::chrono::microseconds>(save_data->timestamp_.time_since_epoch()).count();
+
+        std::string filename1 =
+            "depth_" + std::to_string(MAX_WIDTH_) + "_" + std::to_string(MAX_HEIGHT_) + "_float_depth_" + std::to_string(tstp) + ".raw";
+        std::ofstream file1(filename1, std::ios::binary);
+        file1.write(reinterpret_cast<char*>(save_data->depth_data_.data()), MAX_WIDTH_ * MAX_HEIGHT_ * sizeof(float));
+        file1.close();
+
+        std::string filename2 =
+            "confidence_" + std::to_string(MAX_WIDTH_) + "_" + std::to_string(MAX_HEIGHT_) + "_float_confidence_" + std::to_string(tstp) + ".raw";
+        std::ofstream file2(filename2, std::ios::binary);
+        file2.write(reinterpret_cast<char*>(save_data->confidence_data_.data()), MAX_WIDTH_ * MAX_HEIGHT_ * sizeof(float));
+        file2.close();
+    }
+
+}
+
+//--------------------------------------------------------------------------------------------------------------------------

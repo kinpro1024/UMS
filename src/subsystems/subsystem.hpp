@@ -16,6 +16,9 @@ namespace ums {
     class Subsystem
     {
         public:
+            //Params{preview, still, vid, buffer_size}
+            //Extremely important to set, setting any parameter to false will invoke
+            //customPipeline virtual functions
             class Params
             {
                 public:
@@ -94,7 +97,7 @@ namespace ums {
             //1. IDLE : fillPreview() only.
             //2. STILL_CAPTURE : saveFrame() only with some sync.
             //3. VIDEO_CAPTURE : fillPreview() with writeEnqueue().
-            void stateExecution();
+            void stateExecution(State state);
 
             //INVARIANT: Acqusition runs constantly once constructor initialises its thread and 
             //updates each subsystem buffer, i.e. at the end of acquisitionLoop() latest_frame_

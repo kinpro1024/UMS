@@ -10,6 +10,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickTimeline ShaderTools)
+find_package(ArducamDepthCamera REQUIRED)
 
 add_executable(ums
     src/main.cpp
@@ -18,6 +19,7 @@ add_executable(ums
     src/ui/thermal_presenter.cpp
     src/subsystems/subsystem.cpp
     src/subsystems/thermal.cpp
+    src/subsystems/tof.cpp
     src/wrappers/thermal_wrapper.cpp
     src/wrappers/MLX90640_I2C_Driver.c
     third_party/mlx90640/MLX90640_API.c
@@ -52,4 +54,5 @@ target_link_libraries(ums PRIVATE
     Umsplugin
     UmsContentplugin
     QtQuickDesignerComponents
+    ArducamDepthCamera::ArducamDepthCamera
 )

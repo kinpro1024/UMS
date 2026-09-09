@@ -30,3 +30,14 @@ ums::Thermal& ums::UmsDaemon::getThermalRef()
     ums::Thermal& ref = static_cast<ums::Thermal&>(*active_subsystems_[0]);
     return ref;
 }
+
+//--------------------------------------------------------------------------------------------------------------------------
+
+ums::Tof& ums::UmsDaemon::getTofRef()
+{
+    //Because std::vector<std::unique_ptr<ums::Subsystem>>, it upcasts to Subsystem&
+    ums::Tof& ref = static_cast<ums::Tof&>(*active_subsystems_[1]);
+    return ref;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
