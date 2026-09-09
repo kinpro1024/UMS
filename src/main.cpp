@@ -4,7 +4,7 @@
 #include "core/ui.hpp"
 #include "subsystems/subsystem.hpp"
 
-#include <QThread>
+#include <thread>
 
 int main(int argc, char *argv[])
 {
@@ -19,19 +19,13 @@ int main(int argc, char *argv[])
         }
     );
 
-    QThread* worker = QThread::create([&tp]()
-    {
-        tp.loop();
-    });
-
-    worker->start();
+    std::thread thermal_preview_worker(&ums::ThermalPresenter::loop, &tp);
 
     ums::Ui ui;
     int result = ui.appStuff(argc, argv, tp);
 
-    worker->requestInterruption();
-    worker->wait();
+    tp.abortWorker();
+    thermal_preview_worker.join();
 
-    delete worker;
     return result;
 }

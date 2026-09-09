@@ -2,6 +2,7 @@
 #pragma once
 
 #include <mutex>
+#include <atomic>
 
 #include <QObject>
 #include <QImage>
@@ -31,6 +32,7 @@ namespace ums
 
             int frameCounter() const;
             QImage currentImage() const;
+            void abortWorker();
 
             void loop();
 
@@ -47,6 +49,7 @@ namespace ums
 
             Thermal& curr_thermal_reference_;
             Thermal::ThermalFrame presenter_buffer_;
+            std::atomic<bool> abort_thermal_preview_worker_{false};
 
             mutable std::mutex m_mutex_;
             QImage m_image_;

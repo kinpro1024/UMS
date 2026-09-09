@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
-#include <QThread>
+#include <thread>
 
 void ums::ThermalPresenter::copy()
 {
@@ -49,9 +49,14 @@ void ums::ThermalPresenter::convertAndEmit()
     emit frameReady(image);
 }
 
+void ums::ThermalPresenter::abortWorker()
+{
+    abort_thermal_preview_worker_.store(true);
+}
+
 void ums::ThermalPresenter::loop()
 {
-    while (!QThread::currentThread()->isInterruptionRequested())
+    while (!abort_thermal_preview_worker_.load())
     {
         copy();
         convertAndEmit();

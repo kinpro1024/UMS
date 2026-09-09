@@ -42,7 +42,7 @@ void ums::Subsystem::handleStateTransition(ums::State new_state)
     {
         if (subsystem_params_.supports_video_)
         {
-            abort_writer_worker_ = false;
+            abort_writer_worker_.store(false);
             writer_thread_ = std::thread(&ums::Subsystem::writerWorker, this);
         }
         else
@@ -55,7 +55,7 @@ void ums::Subsystem::handleStateTransition(ums::State new_state)
     {
         if (subsystem_params_.supports_video_)
         {
-            abort_writer_worker_ = true;
+            abort_writer_worker_.store(true);
             writer_thread_.join();
         }
         else
@@ -79,6 +79,10 @@ void ums::Subsystem::setParams(Params params)
 
 void ums::Subsystem::startAcquisitionMachinery()
 {
+    //As I write this I am not sure if RGB will start/stop aqMachinery in the
+    //same session, it just sprung to my mind and therefore the explicit false is set
+    //here, else only stopAq time a flag change is warranted. 
+    abort_acquisition_loop_.store(false);
     aq_thread_ = std::thread(&ums::Subsystem::acquisitionLoop, this);
 }
 
@@ -86,7 +90,7 @@ void ums::Subsystem::startAcquisitionMachinery()
 
 void ums::Subsystem::stopAcquisitionMachinery()
 {
-    abort_acquisition_loop_ = true;
+    abort_acquisition_loop_.store(true);
     aq_thread_.join();
 }
 
@@ -103,7 +107,7 @@ void ums::Subsystem::setPreviewBufferAddress(Frame* preview_buffer)
 
 void ums::Subsystem::acquisitionLoop()
 {
-    while (!abort_acquisition_loop_)
+    while (!abort_acquisition_loop_.load())
     {
         latest_frame_ = acquireLatestFrame();
 

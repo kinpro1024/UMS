@@ -134,8 +134,9 @@ namespace ums {
             std::thread writer_thread_;
             std::thread aq_thread_;
             Params subsystem_params_;
+            std::atomic<bool> abort_writer_worker_{false};
+            std::atomic<bool> abort_acquisition_loop_{false};
+            //happens within mutex, atomic not needed
             bool new_preview_frame_ = false;
-            bool abort_writer_worker_ = false;
-            bool abort_acquisition_loop_ = false;
     };
 }
