@@ -2,12 +2,13 @@
 #include "ui.hpp"
 
 #include <QQmlContext>
+#include <QQuickWindow>
 
 //==========================================================================================================================
 //UI BULLSHIT
 //==========================================================================================================================
 
-int ums::Ui::appStuff(int argc_, char *argv_[], ums::ThermalPresenter& thermal_presenter, ums::TofPresenter& tof_presenter, RgbPresenter& rgb_presenter)
+int ums::Ui::appStuff(int argc_, char *argv_[], ums::ThermalPresenter& thermal_presenter, ums::TofPresenter& tof_presenter, ums::RgbPresenter& rgb_presenter)
 {
     QApplication app(argc_, argv_);
 
@@ -27,6 +28,13 @@ int ums::Ui::appStuff(int argc_, char *argv_[], ums::ThermalPresenter& thermal_p
     {
         return -1;
     }
+
+    /*
+    if (auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().first()))
+    {
+        window->showFullScreen();
+    }
+    */
 
     return app.exec();
 }
