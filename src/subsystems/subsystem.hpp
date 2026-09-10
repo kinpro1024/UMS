@@ -84,7 +84,7 @@ namespace ums {
             //EXCEPTIONS:
             //1. RGB and mic subsystems have their own save implementation in seperate apps.
             //2. Frontend an Trigger subsystems don't need this.
-            virtual void saveFrame(std::unique_ptr<Frame> frame, State state) = 0;
+            virtual void saveFrame(std::unique_ptr<Frame> frame, State state);
 
             //EXCEPTIONS: Used by exceptions to carry out needed processes.
             virtual void customVideoPipelineStart();

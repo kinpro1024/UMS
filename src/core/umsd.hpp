@@ -5,6 +5,7 @@
 #include "subsystem.hpp"
 #include "thermal.hpp"
 #include "tof.hpp"
+#include "rgb.hpp"
 
 namespace ums
 {
@@ -18,6 +19,7 @@ namespace ums
             //any new additions to Subsystem MUST BE REFLECTED HERE
             active_subsystems_.push_back(std::make_unique<Thermal>());
             active_subsystems_.push_back(std::make_unique<Tof>());
+            active_subsystems_.push_back(std::make_unique<Rgb>());
             setGlobalState(state_);
         }
 

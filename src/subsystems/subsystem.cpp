@@ -81,7 +81,11 @@ void ums::Subsystem::startAcquisitionMachinery()
 {
     //As I write this I am not sure if RGB will start/stop aqMachinery in the
     //same session, it just sprung to my mind and therefore the explicit false is set
-    //here, else only stopAq time a flag change is warranted. 
+    //here, else only stopAq time a flag change is warranted.
+    //
+    //Update: RGB uses aqMachinery to run the socket listener when custom functions are
+    //responsible for switching b/w preview-only and video mode cleanly. Keeping old comment
+    //for context.
     abort_acquisition_loop_.store(false);
     aq_thread_ = std::thread(&ums::Subsystem::acquisitionLoop, this);
 }
@@ -122,23 +126,6 @@ void ums::Subsystem::acquisitionLoop()
 
 //--------------------------------------------------------------------------------------------------------------------------
 
-void ums::Subsystem::fillPreview(ums::Subsystem::Frame* preview)
-{
-    {
-        std::unique_lock<std::mutex> lock(preview_mutex_, std::try_to_lock);
-
-        if (lock.owns_lock())
-        {
-            copyToPreviewBuffer(preview);
-            new_preview_frame_ = true;
-        }
-    }
-
-    preview_cv_.notify_one();
-}
-
-//--------------------------------------------------------------------------------------------------------------------------
-
 void ums::Subsystem::stateExecution(State state)
 {
     std::unique_ptr<Frame> frame;
@@ -173,6 +160,23 @@ void ums::Subsystem::stateExecution(State state)
         default:
             break;
     }
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+
+void ums::Subsystem::fillPreview(ums::Subsystem::Frame* preview)
+{
+    {
+        std::unique_lock<std::mutex> lock(preview_mutex_, std::try_to_lock);
+
+        if (lock.owns_lock())
+        {
+            copyToPreviewBuffer(preview);
+            new_preview_frame_ = true;
+        }
+    }
+
+    preview_cv_.notify_one();
 }
 
 //==========================================================================================================================
@@ -255,8 +259,12 @@ void ums::Subsystem::writerWorker()
 }
 
 //==========================================================================================================================
-//CUSTOM PIPELINE DEFAULTS
+//DEFAULTS FOR NON-PURE VIRTUAL FUNCTION
 //==========================================================================================================================
+
+void ums::Subsystem::saveFrame(std::unique_ptr<Frame> frame, State state) {}
+
+//--------------------------------------------------------------------------------------------------------------------------
 
 void ums::Subsystem::customStillPipelineTrigger() {}
 

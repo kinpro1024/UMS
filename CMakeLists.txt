@@ -21,6 +21,7 @@ add_executable(ums
     src/subsystems/subsystem.cpp
     src/subsystems/thermal.cpp
     src/subsystems/tof.cpp
+    src/subsystems/rgb.cpp
     src/wrappers/thermal_wrapper.cpp
     src/wrappers/MLX90640_I2C_Driver.c
     third_party/mlx90640/MLX90640_API.c
