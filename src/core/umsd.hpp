@@ -27,6 +27,7 @@ namespace ums
         State getGlobalState() const;
         Thermal& getThermalRef();
         Tof& getTofRef();
+        Rgb& getRgbRef();
 
         private:
             State state_;

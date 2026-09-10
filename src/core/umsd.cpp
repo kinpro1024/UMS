@@ -41,3 +41,12 @@ ums::Tof& ums::UmsDaemon::getTofRef()
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
+
+ums::Rgb& ums::UmsDaemon::getRgbRef()
+{
+    //Because std::vector<std::unique_ptr<ums::Subsystem>>, it upcasts to Subsystem&
+    ums::Rgb& ref = static_cast<ums::Rgb&>(*active_subsystems_[2]);
+    return ref;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------

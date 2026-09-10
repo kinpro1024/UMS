@@ -47,7 +47,7 @@ Rectangle {
                 y: 10
                 width: 620
                 height: 349
-                source: "images/ums.001.png"
+                source: "image://rgb/" + rgbPresenter.frameCounter
                 layer.enabled: true
                 layer.effect: OpacityMaskEffect {
                     id: opacityMask
