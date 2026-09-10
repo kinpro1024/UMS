@@ -62,7 +62,7 @@ namespace ums
                 tof_.setControl(Arducam::Control::RANGE, MAX_DISTANCE_);
                 tof_.getControl(Arducam::Control::RANGE, &max_range_);
 
-                std::cout << "\n\n\nyayyyyyyyyy\n\n\n" << std::endl;
+                std::cout << "yayyyyyyyyy" << std::endl;
 
                 startAcquisitionMachinery();
             }

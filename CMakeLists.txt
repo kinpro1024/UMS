@@ -17,6 +17,7 @@ add_executable(ums
     src/core/umsd.cpp
     src/core/ui.cpp
     src/ui/thermal_presenter.cpp
+    src/ui/tof_presenter.cpp
     src/subsystems/subsystem.cpp
     src/subsystems/thermal.cpp
     src/subsystems/tof.cpp

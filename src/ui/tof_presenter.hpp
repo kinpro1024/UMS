@@ -9,11 +9,11 @@
 #include <QQuickImageProvider>
 
 #include "subsystem.hpp"
-#include "thermal.hpp"
+#include "tof.hpp"
 
 namespace ums
 {
-    class ThermalPresenter : public QObject
+    class TofPresenter : public QObject
     {
         Q_OBJECT
         Q_PROPERTY(int frameCounter
@@ -21,12 +21,12 @@ namespace ums
                    NOTIFY frameCounterChanged)
 
         public:
-            ThermalPresenter(Thermal& umsd_reference, QObject* parent = nullptr)
+            TofPresenter(Tof& umsd_reference, QObject* parent = nullptr)
                 : QObject(parent),
-                  curr_thermal_reference_(umsd_reference)
+                  curr_tof_reference_(umsd_reference)
             {
-                connect(this, &ThermalPresenter::frameReady,
-                        this, &ThermalPresenter::updateImage,
+                connect(this, &TofPresenter::frameReady,
+                        this, &TofPresenter::updateImage,
                         Qt::QueuedConnection);
             }
 
@@ -47,19 +47,19 @@ namespace ums
             void copy();
             void convertAndEmit();
 
-            Thermal& curr_thermal_reference_;
-            Thermal::ThermalFrame presenter_buffer_;
-            std::atomic<bool> abort_thermal_preview_worker_{false};
+            Tof& curr_tof_reference_;
+            Tof::TofFrame presenter_buffer_;
+            std::atomic<bool> abort_tof_preview_worker_{false};
 
             mutable std::mutex m_mutex_;
             QImage m_image_;
             int m_counter_ = 0;
     };
 
-    class ThermalImageProvider : public QQuickImageProvider
+    class TofImageProvider : public QQuickImageProvider
     {
         public:
-            explicit ThermalImageProvider(ThermalPresenter* presenter)
+            explicit TofImageProvider(TofPresenter* presenter)
                 : QQuickImageProvider(QQuickImageProvider::Image),
                   presenter_(presenter)
             {}
@@ -78,6 +78,6 @@ namespace ums
             }
 
         private:
-            ThermalPresenter* presenter_;
+            TofPresenter* presenter_;
     };
 }
