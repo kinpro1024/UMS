@@ -67,7 +67,7 @@ namespace ums
             QImage requestImage(const QString& id, QSize* size, const QSize&) override
             {
 
-                std::cout<<"img prvdr req: "<<id.toStdString()<<"\n";
+                //std::cout<<"img prvdr req: "<<id.toStdString()<<"\n";
                 QImage image = presenter_->currentImage();
 
                 if(size)

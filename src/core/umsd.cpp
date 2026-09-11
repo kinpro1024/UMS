@@ -27,7 +27,7 @@ ums::State ums::UmsDaemon::getGlobalState() const
 ums::Thermal& ums::UmsDaemon::getThermalRef()
 {
     //Because std::vector<std::unique_ptr<ums::Subsystem>>, it upcasts to Subsystem&
-    ums::Thermal& ref = static_cast<ums::Thermal&>(*active_subsystems_[0]);
+    ums::Thermal& ref = static_cast<ums::Thermal&>(*active_subsystems_[2]);
     return ref;
 }
 
@@ -45,8 +45,47 @@ ums::Tof& ums::UmsDaemon::getTofRef()
 ums::Rgb& ums::UmsDaemon::getRgbRef()
 {
     //Because std::vector<std::unique_ptr<ums::Subsystem>>, it upcasts to Subsystem&
-    ums::Rgb& ref = static_cast<ums::Rgb&>(*active_subsystems_[2]);
+    ums::Rgb& ref = static_cast<ums::Rgb&>(*active_subsystems_[0]);
     return ref;
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
+
+void ums::UmsDaemon::sauron()
+{
+    //Because std::vector<std::unique_ptr<ums::Subsystem>>, it upcasts to Subsystem&
+    ums::Trigger& trig = static_cast<ums::Trigger&>(*active_subsystems_[3]);
+
+    while (!abort_sauron_.load())
+    {
+        ums::Trigger::ButtonPressType this_press = trig.getCurrentButtonPressType();
+
+        switch (this_press)
+        {
+            case ums::Trigger::ButtonPressType::FREE:
+                setGlobalState(ums::State::IDLE);
+                break;
+
+            case ums::Trigger::ButtonPressType::SHORT:
+                setGlobalState(ums::State::STILL_CAPTURE);
+                break;
+
+            case ums::Trigger::ButtonPressType::LONG:
+                setGlobalState(ums::State::VIDEO_CAPTURE);
+                break;
+            
+        
+            default:
+                break;
+        };
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(8));
+    }
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+
+void ums::UmsDaemon::abortSauron()
+{
+    abort_sauron_.store(true);
+}

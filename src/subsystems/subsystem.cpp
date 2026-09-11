@@ -11,6 +11,7 @@ void ums::Subsystem::setState(ums::State state)
     {
         return;
     }
+
     handleStateTransition(state);
     current_state_.store(state);
 }
@@ -23,7 +24,7 @@ void ums::Subsystem::handleStateTransition(ums::State new_state)
 
     if (curr_state_ == ums::State::IDLE && new_state == ums::State::STILL_CAPTURE)
     {
-        if (subsystem_params_.supports_still_)
+        if (subsystem_params_.supports_default_still_pipelines_)
         {
             ; //handled by stateExecution()
         }
@@ -35,12 +36,15 @@ void ums::Subsystem::handleStateTransition(ums::State new_state)
 
     else if (curr_state_ == ums::State::STILL_CAPTURE && new_state == ums::State::IDLE)
     {
-        ;
+        if (subsystem_params_.supports_default_still_pipelines_)
+        {
+            while (still_capture_done_spinlock_.exchange(true));
+        }
     }
 
     else if (curr_state_ == ums::State::IDLE && new_state == ums::State::VIDEO_CAPTURE)
     {
-        if (subsystem_params_.supports_video_)
+        if (subsystem_params_.supports_default_video_pipelines_)
         {
             abort_writer_worker_.store(false);
             writer_thread_ = std::thread(&ums::Subsystem::writerWorker, this);
@@ -53,7 +57,7 @@ void ums::Subsystem::handleStateTransition(ums::State new_state)
 
     else if (curr_state_ == ums::State::VIDEO_CAPTURE && new_state == ums::State::IDLE)
     {
-        if (subsystem_params_.supports_video_)
+        if (subsystem_params_.supports_default_video_pipelines_)
         {
             abort_writer_worker_.store(true);
             writer_thread_.join();
@@ -138,10 +142,14 @@ void ums::Subsystem::stateExecution(State state)
 
         case ums::State::STILL_CAPTURE:
 
-            if (subsystem_params_.supports_still_)
+            if (subsystem_params_.supports_default_still_pipelines_) //custom handled by handleStateTransition()
             {
-                frame = std::move(latest_frame_);
-                saveFrame(std::move(frame), state);
+                if (still_capture_done_spinlock_.load())
+                {
+                    frame = std::move(latest_frame_);
+                    saveFrame(std::move(frame), state);
+                    still_capture_done_spinlock_.store(false);
+                }
             }
 
             break;
@@ -149,7 +157,7 @@ void ums::Subsystem::stateExecution(State state)
         case ums::State::VIDEO_CAPTURE:
             fillPreview(latest_frame_.get());
 
-            if (subsystem_params_.supports_video_)
+            if (subsystem_params_.supports_default_video_pipelines_) //custom handled by handleStateTransition()
             {
                 frame = prepareFrame(std::move(latest_frame_));
                 bufferEnqueue(std::move(frame));

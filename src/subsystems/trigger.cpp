@@ -8,9 +8,11 @@ std::unique_ptr<ums::Subsystem::Frame> ums::Trigger::acquireLatestFrame()
     gpiod_line_value curr[2];
     gpiod_line_request_get_values(request_, curr);
 
-    if (curr[1])
+    //curr is in order the handle put it in
+    if (!curr[1])
     {
         button_pressed_ = false;
+        curr_press_type_.store(ButtonPressType::FREE);
     }
 
     else
@@ -18,12 +20,12 @@ std::unique_ptr<ums::Subsystem::Frame> ums::Trigger::acquireLatestFrame()
         button_pressed_ = !curr[0];
     }
 
-    if (last_button_pressed_ == false && button_pressed_ == true && curr_press_type_.load() == ButtonPressType::FREE)
+    if (!last_button_pressed_ && button_pressed_ && curr_press_type_.load() == ButtonPressType::FREE)
     {
         button_press_start_ = std::chrono::steady_clock::now();
     }
 
-    else if (last_button_pressed_ == true && button_pressed_ == true)
+    else if (last_button_pressed_ && button_pressed_)
     {
         button_press_duration_checkpoint_ = std::chrono::steady_clock::now();
 
@@ -35,7 +37,7 @@ std::unique_ptr<ums::Subsystem::Frame> ums::Trigger::acquireLatestFrame()
         }
     }
 
-    else if (last_button_pressed_ == false && button_pressed_ == true)
+    else if (last_button_pressed_ && !button_pressed_)
     {
         button_press_end_ = std::chrono::steady_clock::now();
 
@@ -54,6 +56,8 @@ std::unique_ptr<ums::Subsystem::Frame> ums::Trigger::acquireLatestFrame()
     }
 
     std::cout << "pressed: " <<static_cast<int>(curr_press_type_.load()) << std::endl;
+
+    last_button_pressed_ = button_pressed_;
 
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     

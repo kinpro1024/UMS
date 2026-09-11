@@ -23,8 +23,8 @@ namespace ums {
             {
                 public:
                     bool supports_preview_ = false;
-                    bool supports_still_ = false;
-                    bool supports_video_ = false;
+                    bool supports_default_still_pipelines_ = false;
+                    bool supports_default_video_pipelines_ = false;
                     uint16_t buffer_size_ = 0;
             };
             //Container for data exchange within generic subsystem machinery that
@@ -123,22 +123,35 @@ namespace ums {
             void writerWorker();
 
             std::atomic<State> current_state_{State::IDLE};
+
             std::unique_ptr<Frame> latest_frame_;
+
             std::condition_variable buffer_cv_;
             std::condition_variable preview_cv_;
             std::mutex buffer_mutex_;
             std::mutex preview_mutex_;
+
             std::vector<std::unique_ptr<Frame>> writer_buffer_;
             std::unique_ptr<Frame> writer_worker_buffer_;
             Frame* preview_buffer_ = nullptr; //NON OWNING: Managed by derived subsystem.
             uint16_t head_ = 0;
             uint16_t tail_ = 0;
             uint16_t buffer_occupancy_ = 0;
+
             std::thread writer_thread_;
             std::thread aq_thread_;
+            
             Params subsystem_params_;
+
             std::atomic<bool> abort_writer_worker_{false};
             std::atomic<bool> abort_acquisition_loop_{false};
+
+            //Small spinlock to spin until STILL_CAPTURE is done.
+            //because when I was making this I noticed that still captures were not consistent
+            //i.e. states were changing too fast for state to reach stateExecution(), this ensures
+            //that STILL_CAPTURE IS ONLY LEFT AFTER COMPLETION.
+            std::atomic<bool> still_capture_done_spinlock_{true};
+
             //happens within mutex, atomic not needed
             bool new_preview_frame_ = false;
     };

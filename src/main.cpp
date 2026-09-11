@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
     std::thread thermal_preview_worker(&ums::ThermalPresenter::loop, &tp);
     std::thread tof_preview_worker(&ums::TofPresenter::loop, &tf);
     std::thread rgb_preview_worker(&ums::RgbPresenter::loop, &rgb);
+    std::thread sauron_worker(&ums::UmsDaemon::sauron, &umsd);
 
     ums::Ui ui;
     int result = ui.appStuff(argc, argv, tp, tf, rgb);
@@ -52,6 +53,9 @@ int main(int argc, char *argv[])
 
     rgb.abortWorker();
     rgb_preview_worker.join();
+
+    umsd.abortSauron();
+    sauron_worker.join();
 
     return result;
 }
