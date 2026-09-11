@@ -1,17 +1,19 @@
 
 #pragma once
 
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+
 #include <unistd.h>
 #include <iostream>
 #include <vector>
 #include <cstdint>
 #include <chrono>
-#include <mutex>
 #include <cstring>
-#include <condition_variable>
 #include <thread>
+#include <stdexcept>
 
 #include "subsystem.hpp"
 
@@ -38,6 +40,23 @@ namespace ums
                 Params rgb_params_{true, false, false, 0};
                 setParams(rgb_params_);
                 setPreviewBufferAddress(&rgb_preview_buffer_);
+
+                rpicam_pid_ = fork();
+
+                if (rpicam_pid_ < 0)
+                {
+                    throw std::runtime_error("could not spawn rpicam process");
+                }
+
+                else if (rpicam_pid_ == 0)
+                {
+                    execl("/usr/local/bin/rpicam-hello", "rpicam-hello", "--timeout", "0",
+                           "--preview-backend", "umsd", "--preview-libs",
+                           "/home/kinpro1024/hijinks/rpicam-apps/build/preview",
+                           (char*)nullptr);
+                }
+
+                std::cout << "started with pid: " << rpicam_pid_ << std::endl;
 
                 //Rgb does not interact with an API, rpicam-vid is forced to use
                 //a custom --umsd-preview-backend which opens a socket to address
@@ -76,6 +95,8 @@ namespace ums
 
             RgbFrame rgb_recieve_buffer_;
             RgbFrame rgb_preview_buffer_;
+
+            pid_t rpicam_pid_;
 
             bool recvAll(int client, void* buffer, size_t size);
     };

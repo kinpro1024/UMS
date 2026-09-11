@@ -6,6 +6,7 @@
 #include "thermal.hpp"
 #include "tof.hpp"
 #include "rgb.hpp"
+#include "trigger.hpp"
 
 namespace ums
 {
@@ -20,6 +21,7 @@ namespace ums
             active_subsystems_.push_back(std::make_unique<Thermal>());
             active_subsystems_.push_back(std::make_unique<Tof>());
             active_subsystems_.push_back(std::make_unique<Rgb>());
+            active_subsystems_.push_back(std::make_unique<Trigger>());
             setGlobalState(state_);
         }
 

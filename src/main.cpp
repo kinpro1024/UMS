@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     ums::ThermalPresenter tp(umsd.getThermalRef());
     ums::TofPresenter tf(umsd.getTofRef());
     ums::RgbPresenter rgb(umsd.getRgbRef());
-
+/*
     QObject::connect(&tp, &ums::ThermalPresenter::frameReady,
         [](const QImage& image)
         {
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
             std::cout << "QImage Rgb recvd: " << image.width() << "x" << image.height() << "\n";
         }
     );
-
+*/
     std::thread thermal_preview_worker(&ums::ThermalPresenter::loop, &tp);
     std::thread tof_preview_worker(&ums::TofPresenter::loop, &tf);
     std::thread rgb_preview_worker(&ums::RgbPresenter::loop, &rgb);

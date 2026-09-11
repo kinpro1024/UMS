@@ -7,7 +7,7 @@
 #include <cstring>
 
 #include "subsystem.hpp"
-#include "../wrappers/thermal_wrapper.hpp"
+#include "thermal_wrapper.hpp"
 
 namespace ums
 {

@@ -23,6 +23,7 @@ add_executable(ums
     src/subsystems/thermal.cpp
     src/subsystems/tof.cpp
     src/subsystems/rgb.cpp
+    src/subsystems/trigger.cpp
     src/wrappers/thermal_wrapper.cpp
     src/wrappers/MLX90640_I2C_Driver.c
     third_party/mlx90640/MLX90640_API.c
@@ -46,6 +47,7 @@ add_subdirectory(Qt/Ums/UmsContent)
 add_subdirectory(Qt/Ums/Dependencies/Components)
 
 target_link_libraries(ums PRIVATE
+    gpiod
     pthread
     Qt6::Core
     Qt6::Gui
