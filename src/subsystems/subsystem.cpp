@@ -51,7 +51,7 @@ void ums::Subsystem::handleStateTransition(ums::State new_state)
         }
         else
         {
-            customVideoPipelineStart();
+            customVideoPipelineStart(); //In hindsight these should have launched independent manager threads
         }
     }
 

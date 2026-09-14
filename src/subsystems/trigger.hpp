@@ -22,11 +22,10 @@ namespace ums
             };
 
             Trigger()
+                : last_sauron_access_(std::chrono::steady_clock::now())
             {
                 Params trigger_params_{false, false, false, 0};
                 setParams(trigger_params_);
-
-                std::cout << "TRIGGER______" << std::endl;
 
                 gpiod_chip* chip = gpiod_chip_open("/dev/gpiochip0");
                 gpiod_line_settings* settings = gpiod_line_settings_new();
@@ -67,9 +66,9 @@ namespace ums
             std::chrono::steady_clock::time_point button_press_duration_checkpoint_;
 
             std::atomic<ButtonPressType> curr_press_type_{ButtonPressType::FREE};
-            std::atomic<bool> flip_flag_{false};
+            std::chrono::steady_clock::time_point last_sauron_access_;
 
-            bool last_flip_flag_ = false;
+            bool first_sauron_access_ = false;
             bool button_pressed_ = false;
             bool last_button_pressed_ = false;
     };

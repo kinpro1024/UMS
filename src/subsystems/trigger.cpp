@@ -55,7 +55,7 @@ std::unique_ptr<ums::Subsystem::Frame> ums::Trigger::acquireLatestFrame()
 
     }
 
-    std::cout << "pressed: " <<static_cast<int>(curr_press_type_.load()) << std::endl;
+    //std::cout << "pressed: " << static_cast<int>(curr_press_type_.load()) << std::endl;
 
     last_button_pressed_ = button_pressed_;
 
@@ -67,11 +67,23 @@ std::unique_ptr<ums::Subsystem::Frame> ums::Trigger::acquireLatestFrame()
 
 ums::Trigger::ButtonPressType ums::Trigger::getCurrentButtonPressType()
 {
-    if(curr_press_type_.load() == ButtonPressType::SHORT)
+    auto now = std::chrono::steady_clock::now();
+    auto time_between_access_ = std::chrono::duration_cast<std::chrono::milliseconds>(last_sauron_access_-now).count();
+    last_sauron_access_ = now;
+
+    if (curr_press_type_.load() == ButtonPressType::SHORT)
     {
+        if (time_between_access_ > 500 && first_sauron_access_) //Discard stale SHORT if sauron is blocked in setState()
+        {
+            curr_press_type_.store(ButtonPressType::FREE);
+            return curr_press_type_.load();
+        }
+        
+        first_sauron_access_ = true;
         return curr_press_type_.exchange(ButtonPressType::FREE);
     }
 
+    first_sauron_access_ = true;
     return curr_press_type_.load();
 }
 

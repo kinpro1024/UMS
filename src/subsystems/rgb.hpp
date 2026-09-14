@@ -41,6 +41,17 @@ namespace ums
                 setParams(rgb_params_);
                 setPreviewBufferAddress(&rgb_preview_buffer_);
 
+                //Rgb does not interact with an API, rpicam-vid is forced to use
+                //a custom --umsd-preview-backend which opens a socket to address
+                ///tmp/frame.sock and is structured as a timepoint data followed
+                //by an RGB888 frame
+                sockaddr_un addr_{};
+                addr_.sun_family = AF_UNIX;
+                strcpy(addr_.sun_path, "/tmp/frametime.sock");
+                unlink("/tmp/frametime.sock");
+                bind(sock_, (sockaddr*)&addr_, sizeof(addr_));
+                listen(sock_, 1);
+
                 rpicam_pid_ = fork();
 
                 if (rpicam_pid_ < 0)
@@ -56,22 +67,8 @@ namespace ums
                            (char*)nullptr);
                 }
 
-                std::cout << "started with pid: " << rpicam_pid_ << std::endl;
-
-                //Rgb does not interact with an API, rpicam-vid is forced to use
-                //a custom --umsd-preview-backend which opens a socket to address
-                ///tmp/frame.sock and is structured as a timepoint data followed
-                //by an RGB888 frame
-                sockaddr_un addr_{};
-                addr_.sun_family = AF_UNIX;
-                strcpy(addr_.sun_path, "/tmp/frametime.sock");
-                unlink("/tmp/frametime.sock");
-                bind(sock_, (sockaddr*)&addr_, sizeof(addr_));
-                listen(sock_, 1);
-
+                //technically this belongs in acquisition but that thread is managed by subsystem
                 client_ = accept(sock_, nullptr, nullptr);
-
-                std::cout << "somehow this happened, if this did, dance baby dance" << std::endl;
 
                 startAcquisitionMachinery();
             }
@@ -79,6 +76,15 @@ namespace ums
             ~Rgb()
             {
                 stopAcquisitionMachinery();
+
+                if (rpicam_pid_ > 0)
+                {
+                    kill(rpicam_pid_, SIGKILL);
+                    waitpid(rpicam_pid_, nullptr, 0);
+                }
+
+                close(client_.load());
+                unlink("/tmp/frametime.sock"); //My mom doesn't pick up after me, I do
             }
 
         protected:
@@ -91,7 +97,7 @@ namespace ums
 
         private:
             int sock_ = socket(AF_UNIX, SOCK_STREAM, 0);
-            int client_;
+            std::atomic<int> client_;
 
             RgbFrame rgb_recieve_buffer_;
             RgbFrame rgb_preview_buffer_;

@@ -16,12 +16,18 @@ namespace ums
             UmsDaemon()
                 :state_(State::IDLE)
             {
+                //=============================================================================================================================================
                 //Constructor creates all subsystems and appends them to active_subsystems_
                 //any new additions to Subsystem MUST BE REFLECTED HERE
-                //
-                //Try to keep the sluggish systems at the back otherwise the still_capture_done_spinlock_
+                //=============================================================================================================================================
+
+                //STILL: Try to keep the sluggish systems at the back otherwise the still_capture_done_spinlock_
                 //in Subsystem may create a potential halt, although since all subsystems are on independent
                 //threads the slowest wait will dominate and this comment is more for a future debug.
+                //
+                //VIDEO: Because of the sequentual nature of setState(), there may be a few halts in video,
+                //especially in the customPipelines rest assured any extra data captured by other subsystem
+                //when one blocks is AFTER the trigger is released, so no data is actually LOST....
                 active_subsystems_.push_back(std::make_unique<Rgb>());
                 active_subsystems_.push_back(std::make_unique<Tof>());
                 active_subsystems_.push_back(std::make_unique<Thermal>());
