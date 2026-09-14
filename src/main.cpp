@@ -7,7 +7,45 @@
 #include "subsystems/subsystem.hpp"
 
 #include <thread>
+#include <chrono>
 
+#include <filesystem>
+
+#include <iomanip>
+
+#include <sstream>
+
+#include <thread>
+
+#include <unistd.h>
+
+void createSession()
+
+{
+
+    const auto now = std::chrono::system_clock::now();
+
+    const std::time_t t = std::chrono::system_clock::to_time_t(now);
+
+    std::tm local_time{};
+
+    localtime_r(&t, &local_time);
+
+    std::ostringstream name;
+
+    name << "session_"
+
+         << std::put_time(&local_time, "%Y%m%d_%H%M%S");
+
+    std::filesystem::path session_dir =
+
+        "/home/kinpro1024/sessions/" + name.str();
+
+    std::filesystem::create_directories(session_dir);
+
+    chdir(session_dir.c_str());
+
+}
 int main(int argc, char *argv[])
 {
     ums::UmsDaemon umsd;

@@ -136,7 +136,9 @@ namespace ums {
             Frame* preview_buffer_ = nullptr; //NON OWNING: Managed by derived subsystem.
             uint16_t head_ = 0;
             uint16_t tail_ = 0;
-            uint16_t buffer_occupancy_ = 0;
+
+
+            std::atomic<uint16_t> buffer_occupancy_{0}; //across enqueue and writer
 
             std::thread writer_thread_;
             std::thread aq_thread_;

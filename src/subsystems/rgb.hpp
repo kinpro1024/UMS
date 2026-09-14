@@ -15,6 +15,10 @@
 #include <thread>
 #include <stdexcept>
 
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+
 #include "subsystem.hpp"
 
 
@@ -94,6 +98,21 @@ namespace ums
             void customVideoPipelineStart() override;
             void customVideoPipelineStop() override;
             void customStillPipelineTrigger() override;
+
+            std::string timestampedFilename(const std::string& extension)
+            {
+                const auto now = std::chrono::system_clock::now();
+                const std::time_t t = std::chrono::system_clock::to_time_t(now);
+
+                std::tm local_time{};
+                localtime_r(&t, &local_time);
+
+                std::ostringstream filename;
+                filename << std::put_time(&local_time, "%Y%m%d_%H%M%S")
+                        << extension;
+
+                return filename.str();
+            }
 
         private:
             int sock_ = socket(AF_UNIX, SOCK_STREAM, 0);

@@ -63,7 +63,7 @@ void ums::Rgb::customVideoPipelineStart()
                 "--preview-backend", "umsd", "--preview-libs",
                 "/home/kinpro1024/hijinks/rpicam-apps/build/preview/",
                 "--codec", "h264", "--bitrate", "32000000", "-o",
-                "test.mp4", "-t", "0", (char*)nullptr);
+                timestampedFilename(".mp4").c_str(), "-t", "0", (char*)nullptr);
     }
 
     client_.store(accept(sock_, nullptr, nullptr));
@@ -96,4 +96,54 @@ void ums::Rgb::customVideoPipelineStop()
     client_.store(accept(sock_, nullptr, nullptr));
 }
 
-void ums::Rgb::customStillPipelineTrigger(){}
+void ums::Rgb::customStillPipelineTrigger()
+{
+    // Stop current rpicam-hello.
+    if (rpicam_pid_ > 0)
+    {
+        kill(rpicam_pid_, SIGKILL);
+        waitpid(rpicam_pid_, nullptr, 0);
+    }
+
+    close(client_.load());
+
+    // Launch one-shot still capture.
+    rpicam_pid_ = fork();
+
+    if (rpicam_pid_ == 0)
+    {
+        execl("/usr/local/bin/rpicam-still", "rpicam-still",
+              "--preview-backend", "umsd",
+              "--preview-libs",
+              "/home/kinpro1024/hijinks/rpicam-apps/build/preview",
+              "-o", timestampedFilename(".jpg").c_str(),
+              (char*)nullptr);
+
+        _exit(1);
+    }
+
+    // Wait for rpicam-still to connect to the preview socket.
+    client_.store(accept(sock_, nullptr, nullptr));
+
+    // Wait for the still process to finish.
+    waitpid(rpicam_pid_, nullptr, 0);
+
+    close(client_.load());
+
+    // Restore continuous preview.
+    rpicam_pid_ = fork();
+
+    if (rpicam_pid_ == 0)
+    {
+        execl("/usr/local/bin/rpicam-hello", "rpicam-hello",
+              "--timeout", "0",
+              "--preview-backend", "umsd",
+              "--preview-libs",
+              "/home/kinpro1024/hijinks/rpicam-apps/build/preview",
+              (char*)nullptr);
+
+        _exit(1);
+    }
+
+    client_.store(accept(sock_, nullptr, nullptr));
+}

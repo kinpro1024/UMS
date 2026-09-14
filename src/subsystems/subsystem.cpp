@@ -227,7 +227,7 @@ void ums::Subsystem::bufferEnqueue(std::unique_ptr<Frame> prepared_frame)
     {
         std::unique_lock<std::mutex> lock(buffer_mutex_);
 
-        if (buffer_occupancy_ == writer_buffer_.size())
+        if (buffer_occupancy_.load() == writer_buffer_.size())
         {
             ; //Drop frame
         }
@@ -235,7 +235,7 @@ void ums::Subsystem::bufferEnqueue(std::unique_ptr<Frame> prepared_frame)
         {
             writer_buffer_[tail_] = std::move(prepared_frame);
             tail_ = (tail_ + 1) % writer_buffer_.size();
-            ++buffer_occupancy_;
+            buffer_occupancy_.store(buffer_occupancy_.load() + 1);
         }
     }
 
@@ -246,20 +246,20 @@ void ums::Subsystem::bufferEnqueue(std::unique_ptr<Frame> prepared_frame)
 
 void ums::Subsystem::writerWorker()
 {
-    while (!abort_writer_worker_)
+    while (!abort_writer_worker_.load())
     {
         {
             std::unique_lock<std::mutex> lock(buffer_mutex_);
-            buffer_cv_.wait(lock, [this]{return abort_writer_worker_ || buffer_occupancy_ != 0;});
+            buffer_cv_.wait(lock, [this]{return abort_writer_worker_ || buffer_occupancy_.load() != 0;});
 
-            if (buffer_occupancy_ == 0 && abort_writer_worker_)
+            if (buffer_occupancy_.load() == 0 && abort_writer_worker_.load())
             {
                 break;
             }
 
             writer_worker_buffer_ = std::move(writer_buffer_[head_]);
             head_ = (head_ + 1) % writer_buffer_.size();
-            --buffer_occupancy_;
+            buffer_occupancy_.store(buffer_occupancy_.load() - 1);
         }
 
         saveFrame(std::move(writer_worker_buffer_), State::VIDEO_CAPTURE);

@@ -40,6 +40,7 @@ target_include_directories(ums PRIVATE
 target_compile_options(ums PRIVATE
     -Wall
     -Wextra
+    -Wpedantic
 )
 
 add_subdirectory(Qt/Ums/Ums)
