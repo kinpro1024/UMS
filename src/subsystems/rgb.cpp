@@ -57,11 +57,11 @@ void ums::Rgb::customVideoPipelineStart()
 
     if (rpicam_pid_ == 0)
     {
-        execl("/usr/local/bin/rpicam-vid", "rpicam-vid", "--signal",
+        execl("/home/kinpro1024/dependencies/rpicam-apps/build/apps/rpicam-vid", "rpicam-vid", "--signal",
                 "--width", "1280", "--height", "720", "--buffer", "20",
                 "--mode", "2304:1296", "--framerate", "30",
                 "--preview-backend", "umsd", "--preview-libs",
-                "/home/kinpro1024/hijinks/rpicam-apps/build/preview/",
+                "/home/kinpro1024/dependencies/rpicam-apps/build/preview/",
                 "--codec", "h264", "--bitrate", "32000000", "-o",
                 timestampedFilename(".mp4").c_str(), "-t", "0", (char*)nullptr);
     }
@@ -87,9 +87,9 @@ void ums::Rgb::customVideoPipelineStop()
 
     if (rpicam_pid_ == 0)
     {
-        execl("/usr/local/bin/rpicam-hello", "rpicam-hello", "--timeout", "0",
+        execl("/home/kinpro1024/dependencies/rpicam-apps/build/apps/rpicam-hello", "rpicam-hello", "--timeout", "0",
                 "--preview-backend", "umsd", "--preview-libs",
-                "/home/kinpro1024/hijinks/rpicam-apps/build/preview",
+                "/home/kinpro1024/dependencies/rpicam-apps/build/preview",
                 (char*)nullptr);
     }
 
@@ -112,10 +112,10 @@ void ums::Rgb::customStillPipelineTrigger()
 
     if (rpicam_pid_ == 0)
     {
-        execl("/usr/local/bin/rpicam-still", "rpicam-still",
+        execl("/home/kinpro1024/dependencies/rpicam-apps/build/apps/rpicam-still", "rpicam-still",
               "--preview-backend", "umsd",
               "--preview-libs",
-              "/home/kinpro1024/hijinks/rpicam-apps/build/preview",
+              "/home/kinpro1024/dependencies/rpicam-apps/build/preview",
               "-o", timestampedFilename(".jpg").c_str(),
               (char*)nullptr);
 
@@ -135,11 +135,11 @@ void ums::Rgb::customStillPipelineTrigger()
 
     if (rpicam_pid_ == 0)
     {
-        execl("/usr/local/bin/rpicam-hello", "rpicam-hello",
+        execl("/home/kinpro1024/dependencies/rpicam-apps/build/apps/rpicam-hello", "rpicam-hello",
               "--timeout", "0",
               "--preview-backend", "umsd",
               "--preview-libs",
-              "/home/kinpro1024/hijinks/rpicam-apps/build/preview",
+              "/home/kinpro1024/dependencies/rpicam-apps/build/preview",
               (char*)nullptr);
 
         _exit(1);

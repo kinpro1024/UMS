@@ -42,7 +42,7 @@ void ums::Subsystem::handleStateTransition(ums::State new_state)
         }
     }
 
-    else if (curr_state_ == ums::State::IDLE && new_state == ums::State::VIDEO_CAPTURE)
+    else if (curr_state_ !=ums::State::VIDEO_CAPTURE && new_state == ums::State::VIDEO_CAPTURE)
     {
         if (subsystem_params_.supports_default_video_pipelines_)
         {
@@ -55,7 +55,7 @@ void ums::Subsystem::handleStateTransition(ums::State new_state)
         }
     }
 
-    else if (curr_state_ == ums::State::VIDEO_CAPTURE && new_state == ums::State::IDLE)
+    else if (curr_state_ == ums::State::VIDEO_CAPTURE && new_state != ums::State::VIDEO_CAPTURE)
     {
         if (subsystem_params_.supports_default_video_pipelines_)
         {

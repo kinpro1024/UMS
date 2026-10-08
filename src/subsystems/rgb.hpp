@@ -65,9 +65,9 @@ namespace ums
 
                 else if (rpicam_pid_ == 0)
                 {
-                    execl("/usr/local/bin/rpicam-hello", "rpicam-hello", "--timeout", "0",
+                    execl("/home/kinpro1024/dependencies/rpicam-apps/build/apps/rpicam-hello", "rpicam-hello", "--timeout", "0",
                            "--preview-backend", "umsd", "--preview-libs",
-                           "/home/kinpro1024/hijinks/rpicam-apps/build/preview",
+                           "/home/kinpro1024/dependencies/rpicam-apps/build/preview",
                            (char*)nullptr);
                 }
 

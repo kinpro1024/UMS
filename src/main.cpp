@@ -48,6 +48,8 @@ void createSession()
 }
 int main(int argc, char *argv[])
 {
+    createSession();
+    
     ums::UmsDaemon umsd;
 
     ums::ThermalPresenter tp(umsd.getThermalRef());
